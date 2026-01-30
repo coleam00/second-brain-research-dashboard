@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --background: oklch(100% 0 0);
+  --foreground: oklch(9.8% 0.015 285.8);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(9.8% 0.015 285.8);
+  --primary: oklch(9.8% 0.015 285.8);
+  --primary-foreground: oklch(98% 0.004 285.8);
+  --secondary: oklch(96.1% 0.006 285.8);
+  --secondary-foreground: oklch(9.8% 0.015 285.8);
+  --muted: oklch(96.1% 0.006 285.8);
+  --muted-foreground: oklch(46.9% 0.016 285.9);
+  --accent: oklch(96.1% 0.006 285.8);
+  --accent-foreground: oklch(9.8% 0.015 285.8);
+  --destructive: oklch(60.2% 0.229 29.2);
+  --destructive-foreground: oklch(98% 0.004 285.8);
+  --border: oklch(91.4% 0.01 286);
+  --input: oklch(91.4% 0.01 286);
+  --ring: oklch(9.8% 0.015 285.8);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: oklch(11.2% 0.015 285.8);
+  --foreground: oklch(98% 0.004 285.8);
+  --card: oklch(11.2% 0.015 285.8);
+  --card-foreground: oklch(98% 0.004 285.8);
+  --primary: oklch(98% 0.004 285.8);
+  --primary-foreground: oklch(11.2% 0.015 285.8);
+  --secondary: oklch(17.5% 0.035 286.8);
+  --secondary-foreground: oklch(98% 0.004 285.8);
+  --muted: oklch(17.5% 0.035 286.8);
+  --muted-foreground: oklch(65.1% 0.026 286);
+  --accent: oklch(17.5% 0.035 286.8);
+  --accent-foreground: oklch(98% 0.004 285.8);
+  --destructive: oklch(30.6% 0.229 29.2);
+  --destructive-foreground: oklch(98% 0.004 285.8);
+  --border: oklch(17.5% 0.035 286.8);
+  --input: oklch(17.5% 0.035 286.8);
+  --ring: oklch(83.9% 0.026 285.7);
+}
