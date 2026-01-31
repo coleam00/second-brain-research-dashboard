@@ -3965,6 +3965,561 @@ def generate_pricing_table(
     return generate_component("a2ui.PricingTable", props)
 
 
+# ============================================================================
+# LAYOUT COMPONENT GENERATORS
+# ============================================================================
+
+
+def generate_section(
+    title: str,
+    content: list[str],
+    footer: str | None = None,
+    style: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a Section A2UI component for grouping related content.
+
+    Creates a section container with header, content area, and optional footer.
+    Sections are used to organize dashboard content into logical groups with
+    clear visual separation and hierarchy.
+
+    Args:
+        title: Section heading/title
+        content: List of child component IDs to include in section body
+        footer: Optional footer text or component ID
+        style: Optional style variant ("default", "bordered", "elevated", "subtle")
+
+    Returns:
+        A2UIComponent configured as Section
+
+    Raises:
+        ValueError: If title is empty
+        ValueError: If content list is empty
+        ValueError: If style is not a valid option
+
+    Examples:
+        >>> # Basic section with content
+        >>> section = generate_section(
+        ...     title="Key Metrics",
+        ...     content=["stat-1", "stat-2", "stat-3"]
+        ... )
+
+        >>> # Section with footer and style
+        >>> section = generate_section(
+        ...     title="Recent Activity",
+        ...     content=["event-1", "event-2"],
+        ...     footer="Updated 5 minutes ago",
+        ...     style="elevated"
+        ... )
+    """
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("Section title cannot be empty")
+
+    # Validate content
+    if not content:
+        raise ValueError("Section requires at least 1 content item")
+
+    if not isinstance(content, list):
+        raise ValueError(f"Section content must be a list, got {type(content).__name__}")
+
+    # Validate style if provided
+    valid_styles = {"default", "bordered", "elevated", "subtle"}
+    if style and style not in valid_styles:
+        raise ValueError(
+            f"Section style must be one of {valid_styles}, got: {style}"
+        )
+
+    props = {
+        "title": title.strip(),
+    }
+
+    if footer:
+        props["footer"] = footer
+
+    if style:
+        props["style"] = style
+
+    component = generate_component("a2ui.Section", props)
+    component.children = content
+
+    return component
+
+
+def generate_grid(
+    columns: int,
+    items: list[str],
+    gap: str | None = None,
+    align: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a Grid A2UI component for multi-column responsive layouts.
+
+    Creates a responsive grid layout that automatically wraps items into the
+    specified number of columns. Grid adapts to screen size and maintains
+    consistent spacing.
+
+    Args:
+        columns: Number of columns (1-6)
+        items: List of child component IDs to display in grid
+        gap: Optional gap size ("sm", "md", "lg", or CSS value like "1rem")
+        align: Optional vertical alignment ("start", "center", "end", "stretch")
+
+    Returns:
+        A2UIComponent configured as Grid
+
+    Raises:
+        ValueError: If columns is not between 1 and 6
+        ValueError: If items list is empty
+        ValueError: If align is not a valid option
+
+    Examples:
+        >>> # Basic 3-column grid
+        >>> grid = generate_grid(
+        ...     columns=3,
+        ...     items=["card-1", "card-2", "card-3", "card-4", "card-5", "card-6"]
+        ... )
+
+        >>> # Grid with custom gap and alignment
+        >>> grid = generate_grid(
+        ...     columns=2,
+        ...     items=["stat-1", "stat-2", "stat-3", "stat-4"],
+        ...     gap="lg",
+        ...     align="center"
+        ... )
+    """
+    # Validate columns
+    if not isinstance(columns, int):
+        raise ValueError(f"Grid columns must be an integer, got {type(columns).__name__}")
+
+    if columns < 1 or columns > 6:
+        raise ValueError(f"Grid columns must be between 1 and 6, got {columns}")
+
+    # Validate items
+    if not items:
+        raise ValueError("Grid requires at least 1 item")
+
+    if not isinstance(items, list):
+        raise ValueError(f"Grid items must be a list, got {type(items).__name__}")
+
+    # Validate align if provided
+    valid_align = {"start", "center", "end", "stretch"}
+    if align and align not in valid_align:
+        raise ValueError(
+            f"Grid align must be one of {valid_align}, got: {align}"
+        )
+
+    props = {
+        "columns": columns,
+    }
+
+    if gap:
+        props["gap"] = gap
+
+    if align:
+        props["align"] = align
+
+    component = generate_component("a2ui.Grid", props)
+    component.children = items
+
+    return component
+
+
+def generate_columns(
+    widths: list[str],
+    items: list[str],
+    gap: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a Columns A2UI component for flexible width column layouts.
+
+    Creates a multi-column layout with custom width ratios for each column.
+    Supports percentage-based, fractional, and fixed width specifications.
+
+    Args:
+        widths: List of width specifications (e.g., ["50%", "50%"], ["2fr", "1fr"], ["300px", "auto"])
+        items: List of child component IDs, one per column
+        gap: Optional gap size ("sm", "md", "lg", or CSS value like "1rem")
+
+    Returns:
+        A2UIComponent configured as Columns
+
+    Raises:
+        ValueError: If widths and items lists have different lengths
+        ValueError: If widths or items list is empty
+        ValueError: If more than 4 columns specified
+
+    Examples:
+        >>> # Two equal columns
+        >>> cols = generate_columns(
+        ...     widths=["50%", "50%"],
+        ...     items=["main-content", "sidebar-content"]
+        ... )
+
+        >>> # Three columns with different widths
+        >>> cols = generate_columns(
+        ...     widths=["2fr", "1fr", "1fr"],
+        ...     items=["content-1", "content-2", "content-3"],
+        ...     gap="md"
+        ... )
+    """
+    # Validate widths
+    if not widths:
+        raise ValueError("Columns requires at least 1 width specification")
+
+    if not isinstance(widths, list):
+        raise ValueError(f"Columns widths must be a list, got {type(widths).__name__}")
+
+    if len(widths) > 4:
+        raise ValueError(f"Columns supports up to 4 columns, got {len(widths)}")
+
+    # Validate items
+    if not items:
+        raise ValueError("Columns requires at least 1 item")
+
+    if not isinstance(items, list):
+        raise ValueError(f"Columns items must be a list, got {type(items).__name__}")
+
+    # Validate lengths match
+    if len(widths) != len(items):
+        raise ValueError(
+            f"Columns widths and items must have same length. "
+            f"Got {len(widths)} widths and {len(items)} items"
+        )
+
+    props = {
+        "widths": widths,
+    }
+
+    if gap:
+        props["gap"] = gap
+
+    component = generate_component("a2ui.Columns", props)
+    component.children = items
+
+    return component
+
+
+def generate_tabs(
+    tabs_data: list[dict[str, Any]],
+    active_tab: int = 0
+) -> A2UIComponent:
+    """
+    Generate a Tabs A2UI component for tabbed interface organization.
+
+    Creates a tabbed interface for organizing related content into separate
+    views. Only one tab is visible at a time, reducing clutter and improving
+    navigation.
+
+    Args:
+        tabs_data: List of tab dictionaries with "label" and "content" (list of component IDs)
+        active_tab: Index of initially active tab (default: 0)
+
+    Returns:
+        A2UIComponent configured as Tabs
+
+    Raises:
+        ValueError: If tabs_data is empty
+        ValueError: If active_tab index is out of range
+        ValueError: If any tab missing "label" or "content" fields
+        ValueError: If more than 8 tabs specified
+
+    Examples:
+        >>> # Basic tabs
+        >>> tabs = generate_tabs(
+        ...     tabs_data=[
+        ...         {"label": "Overview", "content": ["summary-1", "stats-1"]},
+        ...         {"label": "Details", "content": ["table-1", "chart-1"]},
+        ...         {"label": "History", "content": ["timeline-1"]}
+        ...     ]
+        ... )
+
+        >>> # Tabs with custom active tab
+        >>> tabs = generate_tabs(
+        ...     tabs_data=[
+        ...         {"label": "All", "content": ["list-all"]},
+        ...         {"label": "Active", "content": ["list-active"]},
+        ...         {"label": "Completed", "content": ["list-completed"]}
+        ...     ],
+        ...     active_tab=1  # Start with "Active" tab
+        ... )
+    """
+    # Validate tabs_data
+    if not tabs_data:
+        raise ValueError("Tabs requires at least 1 tab")
+
+    if not isinstance(tabs_data, list):
+        raise ValueError(f"Tabs tabs_data must be a list, got {type(tabs_data).__name__}")
+
+    if len(tabs_data) > 8:
+        raise ValueError(f"Tabs supports up to 8 tabs, got {len(tabs_data)}")
+
+    # Validate each tab
+    for i, tab in enumerate(tabs_data):
+        if not isinstance(tab, dict):
+            raise ValueError(f"Tab {i} must be a dictionary")
+
+        if "label" not in tab:
+            raise ValueError(f"Tab {i} must have 'label' field")
+
+        if "content" not in tab:
+            raise ValueError(f"Tab {i} must have 'content' field")
+
+        if not isinstance(tab["content"], list):
+            raise ValueError(
+                f"Tab {i} content must be a list, got {type(tab['content']).__name__}"
+            )
+
+    # Validate active_tab
+    if not isinstance(active_tab, int):
+        raise ValueError(f"Tabs active_tab must be an integer, got {type(active_tab).__name__}")
+
+    if active_tab < 0 or active_tab >= len(tabs_data):
+        raise ValueError(
+            f"Tabs active_tab must be between 0 and {len(tabs_data) - 1}, got {active_tab}"
+        )
+
+    props = {
+        "tabs": [{"label": tab["label"]} for tab in tabs_data],
+        "activeTab": active_tab,
+    }
+
+    # Build children structure as dict mapping tab indices to content
+    children = {str(i): tab["content"] for i, tab in enumerate(tabs_data)}
+
+    component = generate_component("a2ui.Tabs", props)
+    component.children = children
+
+    return component
+
+
+def generate_accordion(
+    items: list[dict[str, Any]],
+    allow_multiple: bool = False
+) -> A2UIComponent:
+    """
+    Generate an Accordion A2UI component for collapsible content sections.
+
+    Creates an accordion with expandable/collapsible sections. Saves vertical
+    space by allowing users to show/hide content sections as needed.
+
+    Args:
+        items: List of accordion item dictionaries with "title" and "content" (list of component IDs)
+        allow_multiple: Whether multiple sections can be open simultaneously (default: False)
+
+    Returns:
+        A2UIComponent configured as Accordion
+
+    Raises:
+        ValueError: If items is empty
+        ValueError: If any item missing "title" or "content" fields
+        ValueError: If more than 10 accordion items specified
+
+    Examples:
+        >>> # Basic accordion (only one section open at a time)
+        >>> accordion = generate_accordion(
+        ...     items=[
+        ...         {"title": "Getting Started", "content": ["step-1", "step-2", "step-3"]},
+        ...         {"title": "Advanced Features", "content": ["feature-1", "feature-2"]},
+        ...         {"title": "Troubleshooting", "content": ["faq-1", "faq-2"]}
+        ...     ]
+        ... )
+
+        >>> # Accordion allowing multiple open sections
+        >>> accordion = generate_accordion(
+        ...     items=[
+        ...         {"title": "API Reference", "content": ["api-doc-1"]},
+        ...         {"title": "Code Examples", "content": ["code-1", "code-2"]},
+        ...         {"title": "Best Practices", "content": ["tip-1", "tip-2", "tip-3"]}
+        ...     ],
+        ...     allow_multiple=True
+        ... )
+    """
+    # Validate items
+    if not items:
+        raise ValueError("Accordion requires at least 1 item")
+
+    if not isinstance(items, list):
+        raise ValueError(f"Accordion items must be a list, got {type(items).__name__}")
+
+    if len(items) > 10:
+        raise ValueError(f"Accordion supports up to 10 items, got {len(items)}")
+
+    # Validate each item
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise ValueError(f"Accordion item {i} must be a dictionary")
+
+        if "title" not in item:
+            raise ValueError(f"Accordion item {i} must have 'title' field")
+
+        if "content" not in item:
+            raise ValueError(f"Accordion item {i} must have 'content' field")
+
+        if not isinstance(item["content"], list):
+            raise ValueError(
+                f"Accordion item {i} content must be a list, got {type(item['content']).__name__}"
+            )
+
+    props = {
+        "items": [{"title": item["title"]} for item in items],
+        "allowMultiple": allow_multiple,
+    }
+
+    # Build children structure as dict mapping item indices to content
+    children = {str(i): item["content"] for i, item in enumerate(items)}
+
+    component = generate_component("a2ui.Accordion", props)
+    component.children = children
+
+    return component
+
+
+def generate_carousel(
+    items: list[str],
+    visible_count: int = 1,
+    auto_advance: bool = False
+) -> A2UIComponent:
+    """
+    Generate a Carousel A2UI component for scrollable content display.
+
+    Creates a horizontal carousel/slider for browsing through multiple items.
+    Supports auto-advance and configurable number of visible items.
+
+    Args:
+        items: List of child component IDs to display in carousel
+        visible_count: Number of items visible at once (1-4, default: 1)
+        auto_advance: Whether carousel auto-advances (default: False)
+
+    Returns:
+        A2UIComponent configured as Carousel
+
+    Raises:
+        ValueError: If items is empty
+        ValueError: If visible_count is not between 1 and 4
+        ValueError: If items has fewer items than visible_count
+
+    Examples:
+        >>> # Single-item carousel (slideshow)
+        >>> carousel = generate_carousel(
+        ...     items=["image-1", "image-2", "image-3", "image-4"],
+        ...     auto_advance=True
+        ... )
+
+        >>> # Multi-item carousel showing 3 at a time
+        >>> carousel = generate_carousel(
+        ...     items=["card-1", "card-2", "card-3", "card-4", "card-5", "card-6"],
+        ...     visible_count=3
+        ... )
+    """
+    # Validate items
+    if not items:
+        raise ValueError("Carousel requires at least 1 item")
+
+    if not isinstance(items, list):
+        raise ValueError(f"Carousel items must be a list, got {type(items).__name__}")
+
+    # Validate visible_count
+    if not isinstance(visible_count, int):
+        raise ValueError(
+            f"Carousel visible_count must be an integer, got {type(visible_count).__name__}"
+        )
+
+    if visible_count < 1 or visible_count > 4:
+        raise ValueError(f"Carousel visible_count must be between 1 and 4, got {visible_count}")
+
+    if len(items) < visible_count:
+        raise ValueError(
+            f"Carousel must have at least {visible_count} items to show {visible_count} visible. "
+            f"Got {len(items)} items"
+        )
+
+    props = {
+        "visibleCount": visible_count,
+        "autoAdvance": auto_advance,
+    }
+
+    component = generate_component("a2ui.Carousel", props)
+    component.children = items
+
+    return component
+
+
+def generate_sidebar(
+    sidebar_content: list[str],
+    main_content: list[str],
+    sidebar_width: str = "30%"
+) -> A2UIComponent:
+    """
+    Generate a Sidebar A2UI component for fixed sidebar + main content layout.
+
+    Creates a two-panel layout with a fixed-width sidebar and flexible main
+    content area. Commonly used for navigation, filters, or supplementary info.
+
+    Args:
+        sidebar_content: List of child component IDs for sidebar panel
+        main_content: List of child component IDs for main content area
+        sidebar_width: Width of sidebar (percentage, pixels, or CSS value, default: "30%")
+
+    Returns:
+        A2UIComponent configured as Sidebar
+
+    Raises:
+        ValueError: If sidebar_content or main_content is empty
+        ValueError: If sidebar_width is invalid format
+
+    Examples:
+        >>> # Basic sidebar layout
+        >>> sidebar_layout = generate_sidebar(
+        ...     sidebar_content=["nav-1", "filters-1"],
+        ...     main_content=["content-1", "content-2", "content-3"]
+        ... )
+
+        >>> # Sidebar with custom width
+        >>> sidebar_layout = generate_sidebar(
+        ...     sidebar_content=["toc-1", "related-1"],
+        ...     main_content=["article-1"],
+        ...     sidebar_width="250px"
+        ... )
+    """
+    # Validate sidebar_content
+    if not sidebar_content:
+        raise ValueError("Sidebar requires at least 1 sidebar content item")
+
+    if not isinstance(sidebar_content, list):
+        raise ValueError(
+            f"Sidebar sidebar_content must be a list, got {type(sidebar_content).__name__}"
+        )
+
+    # Validate main_content
+    if not main_content:
+        raise ValueError("Sidebar requires at least 1 main content item")
+
+    if not isinstance(main_content, list):
+        raise ValueError(
+            f"Sidebar main_content must be a list, got {type(main_content).__name__}"
+        )
+
+    # Validate sidebar_width format
+    if not sidebar_width or not sidebar_width.strip():
+        raise ValueError("Sidebar sidebar_width cannot be empty")
+
+    props = {
+        "sidebarWidth": sidebar_width,
+    }
+
+    # Build children structure as dict with "sidebar" and "main" keys
+    children = {
+        "sidebar": sidebar_content,
+        "main": main_content
+    }
+
+    component = generate_component("a2ui.Sidebar", props)
+    component.children = children
+
+    return component
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -4026,4 +4581,12 @@ __all__ = [
     "generate_vs_card",
     "generate_feature_matrix",
     "generate_pricing_table",
+    # Layout generators
+    "generate_section",
+    "generate_grid",
+    "generate_columns",
+    "generate_tabs",
+    "generate_accordion",
+    "generate_carousel",
+    "generate_sidebar",
 ]
