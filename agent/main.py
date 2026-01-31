@@ -18,6 +18,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Import the Pydantic AI agent
+from agent import agent, AgentState, create_agent
+
 # Configuration
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 ALLOWED_ORIGINS = os.getenv(
@@ -47,12 +50,22 @@ class AgentRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    global agent
+
     print(f"🚀 Second Brain Agent starting on port {BACKEND_PORT}")
     print(f"📡 AG-UI endpoint: http://localhost:{BACKEND_PORT}/ag-ui/stream")
     print(f"🔑 OpenRouter model: {OPENROUTER_MODEL}")
 
     if not OPENROUTER_API_KEY:
         print("⚠️  WARNING: OPENROUTER_API_KEY not set in environment")
+    else:
+        # Re-initialize agent if it wasn't initialized during import
+        if agent is None:
+            try:
+                agent = create_agent()
+                print("✅ Pydantic AI agent initialized successfully")
+            except Exception as e:
+                print(f"❌ Failed to initialize agent: {e}")
 
     yield
 
@@ -122,25 +135,43 @@ async def ag_ui_stream(request: AgentRequest):
         """
         Generate AG-UI protocol events.
 
-        TODO: Implement Pydantic AI agent that:
-        1. Analyzes Markdown content (content type, structure, media)
-        2. Selects optimal layout (magazine, dashboard, tutorial, etc.)
-        3. Extracts components (headlines, stats, videos, etc.)
-        4. Emits AG-UI protocol messages with A2UI component definitions
-
-        For now, this is a placeholder that sends a simple test message.
+        Uses the Pydantic AI agent to:
+        1. Analyze Markdown content (content type, structure, media)
+        2. Select optimal layout (magazine, dashboard, tutorial, etc.)
+        3. Extract components (headlines, stats, videos, etc.)
+        4. Emit AG-UI protocol messages with A2UI component definitions
         """
-        # Placeholder: Send a test AG-UI message
-        yield 'data: {"type": "status", "message": "Agent initialized"}\n\n'
-        yield 'data: {"type": "status", "message": "Analyzing markdown content..."}\n\n'
+        import json
 
-        # TODO: Implement actual Pydantic AI agent logic here
-        # 1. Create Pydantic AI agent with OpenRouter model
-        # 2. Analyze markdown content
-        # 3. Generate A2UI component definitions
-        # 4. Stream AG-UI protocol messages
+        try:
+            # Initialize agent state
+            yield 'data: {"type": "status", "message": "Agent initialized"}\n\n'
+            yield 'data: {"type": "status", "message": "Analyzing markdown content..."}\n\n'
 
-        yield 'data: {"type": "complete", "message": "Dashboard generation complete"}\n\n'
+            # Create agent state
+            state = AgentState(document_content=request.markdown)
+
+            # Run agent to analyze content
+            result = await agent.run(
+                "Analyze this markdown document and extract key components for dashboard creation.",
+                deps=state,
+            )
+
+            # Stream the analysis results
+            yield f'data: {json.dumps({"type": "analysis", "result": result.data})}\n\n'
+
+            # Stream component information if available
+            if state.analysis_results:
+                yield f'data: {json.dumps({"type": "components", "data": state.analysis_results})}\n\n'
+
+            if state.content_type:
+                yield f'data: {json.dumps({"type": "content_type", "value": state.content_type})}\n\n'
+
+            yield 'data: {"type": "complete", "message": "Dashboard generation complete"}\n\n'
+
+        except Exception as e:
+            error_msg = f"Error during agent processing: {str(e)}"
+            yield f'data: {json.dumps({"type": "error", "message": error_msg})}\n\n'
 
     return StreamingResponse(
         event_generator(),
