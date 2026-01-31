@@ -18,6 +18,7 @@ import { TLDR, KeyTakeaways, ExecutiveSummary, TableOfContents } from "@/compone
 import { VideoCard, ImageCard, PlaylistCard, PodcastCard } from "@/components/A2UI/Media";
 import { StatCard, MetricRow, ProgressRing, ComparisonBar, DataTable, MiniChart } from "@/components/A2UI/Data";
 import { RankedItem, ChecklistItem, ProConItem, BulletPoint } from "@/components/A2UI/Lists";
+import { LinkCard, ToolCard, BookCard, RepoCard } from "@/components/A2UI/Resources";
 
 /**
  * A2UI Component Specification
@@ -78,109 +79,10 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.BulletPoint": (props: any) => <BulletPoint {...props} />,
 
   // ===== RESOURCE COMPONENTS =====
-  "a2ui.LinkCard": ({ title, description, url, favicon_url, domain }: any) => (
-    <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => window.open(url, '_blank')}>
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          {favicon_url && <img src={favicon_url} alt="" className="w-6 h-6 rounded" />}
-          <div className="flex-1">
-            <CardTitle className="text-base">{title}</CardTitle>
-            {domain && <CardDescription>{domain}</CardDescription>}
-          </div>
-        </div>
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
-        </CardContent>
-      )}
-    </Card>
-  ),
-
-  "a2ui.ToolCard": ({ name, description, category, pricing, url, logo_url }: any) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            {logo_url && <img src={logo_url} alt={name} className="w-10 h-10 rounded" />}
-            <div>
-              <CardTitle className="text-base">{name}</CardTitle>
-              {category && <CardDescription>{category}</CardDescription>}
-            </div>
-          </div>
-          {pricing && <Badge>{pricing}</Badge>}
-        </div>
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">Visit Tool</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
-
-  "a2ui.BookCard": ({ title, author, description, cover_url, rating, url }: any) => (
-    <Card>
-      {cover_url && (
-        <img src={cover_url} alt={title} className="w-full h-64 object-cover rounded-t-lg" />
-      )}
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>
-          by {author}
-          {rating && ` • ${rating}/5 ⭐`}
-        </CardDescription>
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">View Book</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
-
-  "a2ui.RepoCard": ({ name, description, language, stars, forks, url, owner }: any) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <span className="text-muted-foreground">📦</span>
-          {owner && <span className="text-sm text-muted-foreground">{owner} /</span>}
-          {name}
-        </CardTitle>
-        <CardDescription className="flex items-center gap-3">
-          {language && <Badge variant="outline">{language}</Badge>}
-          {stars !== undefined && <span className="text-xs">⭐ {stars}</span>}
-          {forks !== undefined && <span className="text-xs">🔀 {forks}</span>}
-        </CardDescription>
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">View Repository</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
+  "a2ui.LinkCard": (props: any) => <LinkCard {...props} />,
+  "a2ui.ToolCard": (props: any) => <ToolCard {...props} />,
+  "a2ui.BookCard": (props: any) => <BookCard {...props} />,
+  "a2ui.RepoCard": (props: any) => <RepoCard {...props} />,
 
   // ===== PEOPLE COMPONENTS =====
   "a2ui.ProfileCard": (props: any) => <ProfileCard {...props} />,
