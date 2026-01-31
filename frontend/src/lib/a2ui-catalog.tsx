@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { HeadlineCard, TrendIndicator, TimelineEvent, NewsTicker } from "@/components/A2UI/News";
 import { ProfileCard, CompanyCard, QuoteCard, ExpertTip } from "@/components/A2UI/People";
 import { TLDR, KeyTakeaways, ExecutiveSummary, TableOfContents } from "@/components/A2UI/Summary";
+import { VideoCard, ImageCard, PlaylistCard, PodcastCard } from "@/components/A2UI/Media";
 
 /**
  * A2UI Component Specification
@@ -55,111 +56,10 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.NewsTicker": (props: any) => <NewsTicker {...props} />,
 
   // ===== MEDIA COMPONENTS =====
-  "a2ui.VideoCard": ({ title, description, thumbnail_url, duration, platform, url }: any) => (
-    <Card>
-      <div className="relative">
-        <img src={thumbnail_url} alt={title} className="w-full h-48 object-cover rounded-t-lg" />
-        {duration && (
-          <Badge className="absolute bottom-2 right-2" variant="secondary">{duration}</Badge>
-        )}
-      </div>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        {platform && <CardDescription>{platform}</CardDescription>}
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">Watch Video</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
-
-  "a2ui.ImageCard": ({ title, description, image_url, alt_text, source, url }: any) => (
-    <Card>
-      <img src={image_url} alt={alt_text || title} className="w-full h-64 object-cover rounded-t-lg" />
-      {(title || description || source) && (
-        <CardHeader>
-          {title && <CardTitle className="text-base">{title}</CardTitle>}
-          {(description || source) && (
-            <CardDescription>
-              {description}
-              {source && ` • Source: ${source}`}
-            </CardDescription>
-          )}
-        </CardHeader>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">View Original</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
-
-  "a2ui.PlaylistCard": ({ title, description, item_count, thumbnail_url, platform, url }: any) => (
-    <Card>
-      {thumbnail_url && (
-        <div className="relative">
-          <img src={thumbnail_url} alt={title} className="w-full h-40 object-cover rounded-t-lg" />
-          <Badge className="absolute top-2 right-2">{item_count} items</Badge>
-        </div>
-      )}
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        {platform && <CardDescription>{platform}</CardDescription>}
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild variant="outline" className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">Open Playlist</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
-
-  "a2ui.PodcastCard": ({ title, description, host, episode_number, duration, thumbnail_url, url }: any) => (
-    <Card>
-      {thumbnail_url && (
-        <img src={thumbnail_url} alt={title} className="w-full h-48 object-cover rounded-t-lg" />
-      )}
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>
-          {host}
-          {episode_number && ` • Episode ${episode_number}`}
-          {duration && ` • ${duration}`}
-        </CardDescription>
-      </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
-        </CardContent>
-      )}
-      {url && (
-        <CardFooter>
-          <Button asChild className="w-full">
-            <a href={url} target="_blank" rel="noopener noreferrer">Listen Now</a>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
-  ),
+  "a2ui.VideoCard": (props: any) => <VideoCard {...props} />,
+  "a2ui.ImageCard": (props: any) => <ImageCard {...props} />,
+  "a2ui.PlaylistCard": (props: any) => <PlaylistCard {...props} />,
+  "a2ui.PodcastCard": (props: any) => <PodcastCard {...props} />,
 
   // ===== DATA COMPONENTS =====
   "a2ui.StatCard": ({ label, value, unit, trend, icon, color }: any) => (

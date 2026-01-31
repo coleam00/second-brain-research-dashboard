@@ -7,12 +7,14 @@ import A2UITestPage from './A2UITestPage.tsx'
 import NewsComponentsTestPage from './pages/NewsComponentsTestPage.tsx'
 import TestPeopleComponents from './pages/TestPeopleComponents.tsx'
 import SummaryComponentsTestPage from './pages/SummaryComponentsTestPage.tsx'
+import MediaComponentsTest from './pages/MediaComponentsTest.tsx'
 
-// Use test pages based on query params
-const USE_TEST_PAGE = window.location.search.includes('test');
-const USE_NEWS_TEST_PAGE = window.location.search.includes('news-test');
-const USE_PEOPLE_TEST_PAGE = window.location.search.includes('people-test');
+// Use test pages based on query params (check specific tests first to avoid conflicts)
+const USE_MEDIA_TEST_PAGE = window.location.search.includes('media-test');
 const USE_SUMMARY_TEST_PAGE = window.location.search.includes('summary-test');
+const USE_PEOPLE_TEST_PAGE = window.location.search.includes('people-test');
+const USE_NEWS_TEST_PAGE = window.location.search.includes('news-test');
+const USE_TEST_PAGE = window.location.search === '?test' || window.location.search.startsWith('?test&');
 
 // CopilotKit configuration
 const COPILOT_CONFIG = {
@@ -24,7 +26,9 @@ console.log('Initializing CopilotKit with backend:', COPILOT_CONFIG.runtimeUrl)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {USE_SUMMARY_TEST_PAGE ? (
+    {USE_MEDIA_TEST_PAGE ? (
+      <MediaComponentsTest />
+    ) : USE_SUMMARY_TEST_PAGE ? (
       <SummaryComponentsTestPage />
     ) : USE_PEOPLE_TEST_PAGE ? (
       <TestPeopleComponents />
