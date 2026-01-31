@@ -19,6 +19,7 @@ import { VideoCard, ImageCard, PlaylistCard, PodcastCard } from "@/components/A2
 import { StatCard, MetricRow, ProgressRing, ComparisonBar, DataTable, MiniChart } from "@/components/A2UI/Data";
 import { RankedItem, ChecklistItem, ProConItem, BulletPoint } from "@/components/A2UI/Lists";
 import { LinkCard, ToolCard, BookCard, RepoCard } from "@/components/A2UI/Resources";
+import { ComparisonTable, VsCard, FeatureMatrix, PricingTable } from "@/components/A2UI/Comparison";
 
 /**
  * A2UI Component Specification
@@ -97,127 +98,10 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.TableOfContents": (props: any) => <TableOfContents {...props} />,
 
   // ===== COMPARISON COMPONENTS =====
-  "a2ui.ComparisonTable": ({ headers, rows, caption }: any) => (
-    <Card>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            {caption && <caption className="p-4 text-sm font-semibold">{caption}</caption>}
-            <thead className="bg-muted">
-              <tr>
-                {headers?.map((header: string, idx: number) => (
-                  <th key={idx} className="px-4 py-3 text-left text-sm font-semibold">{header}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows?.map((row: any, rowIdx: number) => (
-                <tr key={rowIdx} className="border-b last:border-0">
-                  {row.map((cell: any, cellIdx: number) => (
-                    <td key={cellIdx} className="px-4 py-3 text-sm">
-                      {typeof cell === 'boolean' ? (cell ? '✓' : '✗') : cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.VsCard": ({ item_a, item_b, comparison_points }: any) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{item_a.name}</CardTitle>
-          <Badge variant="outline">VS</Badge>
-          <CardTitle className="text-base">{item_b.name}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {comparison_points?.map((point: any, idx: number) => (
-            <div key={idx} className="grid grid-cols-3 gap-4 items-center">
-              <div className="text-sm text-right">{point.value_a}</div>
-              <div className="text-xs text-center text-muted-foreground font-medium">{point.metric}</div>
-              <div className="text-sm">{point.value_b}</div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.FeatureMatrix": ({ features, products }: any) => (
-    <Card>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold">Feature</th>
-                {products?.map((product: string, idx: number) => (
-                  <th key={idx} className="px-4 py-3 text-center text-sm font-semibold">{product}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {features?.map((feature: any, idx: number) => (
-                <tr key={idx} className="border-b last:border-0">
-                  <td className="px-4 py-3 text-sm font-medium">{feature.name}</td>
-                  {feature.availability.map((avail: boolean, pIdx: number) => (
-                    <td key={pIdx} className="px-4 py-3 text-center">
-                      <span className={avail ? 'text-green-500' : 'text-red-500'}>
-                        {avail ? '✓' : '✗'}
-                      </span>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.PricingTable": ({ plans }: any) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {plans?.map((plan: any, idx: number) => (
-        <Card key={idx} className={plan.highlighted ? 'border-primary border-2' : ''}>
-          {plan.highlighted && (
-            <div className="bg-primary text-primary-foreground text-center py-1 text-xs font-semibold">
-              POPULAR
-            </div>
-          )}
-          <CardHeader>
-            <CardTitle className="text-base">{plan.name}</CardTitle>
-            <div className="text-3xl font-bold">
-              {plan.price}
-              {plan.period && <span className="text-sm text-muted-foreground">/{plan.period}</span>}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {plan.features?.map((feature: string, fIdx: number) => (
-                <li key={fIdx} className="text-sm flex items-center gap-2">
-                  <span className="text-primary">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" variant={plan.highlighted ? 'default' : 'outline'}>
-              {plan.cta || 'Get Started'}
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  ),
+  "a2ui.ComparisonTable": (props: any) => <ComparisonTable {...props} />,
+  "a2ui.VsCard": (props: any) => <VsCard {...props} />,
+  "a2ui.FeatureMatrix": (props: any) => <FeatureMatrix {...props} />,
+  "a2ui.PricingTable": (props: any) => <PricingTable {...props} />,
 
   // ===== INSTRUCTIONAL COMPONENTS =====
   "a2ui.StepCard": ({ step_number, title, description, image_url, tips }: any) => (
