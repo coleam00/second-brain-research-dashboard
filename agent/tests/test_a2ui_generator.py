@@ -27,6 +27,12 @@ from a2ui_generator import (
     generate_trend_indicator,
     generate_timeline_event,
     generate_news_ticker,
+    # Media generators
+    extract_youtube_id,
+    generate_video_card,
+    generate_image_card,
+    generate_playlist_card,
+    generate_podcast_card,
 )
 
 
@@ -975,3 +981,664 @@ class TestNewsGeneratorsIntegration:
         data = json.loads(json_str)
         assert data["type"] == "a2ui.TimelineEvent"
         assert data["props"]["eventType"] == "article"
+
+
+class TestExtractYoutubeId:
+    """Test suite for extract_youtube_id() utility function."""
+
+    def test_extract_from_watch_url(self):
+        """Test extracting video ID from youtube.com/watch?v= URL."""
+        video_id = extract_youtube_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_from_short_url(self):
+        """Test extracting video ID from youtu.be short URL."""
+        video_id = extract_youtube_id("https://youtu.be/dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_from_embed_url(self):
+        """Test extracting video ID from youtube.com/embed/ URL."""
+        video_id = extract_youtube_id("https://www.youtube.com/embed/dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_from_v_url(self):
+        """Test extracting video ID from youtube.com/v/ URL."""
+        video_id = extract_youtube_id("https://www.youtube.com/v/dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_without_www(self):
+        """Test extracting from URL without www."""
+        video_id = extract_youtube_id("https://youtube.com/watch?v=dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_with_http(self):
+        """Test extracting from http (not https) URL."""
+        video_id = extract_youtube_id("http://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_with_additional_params(self):
+        """Test extracting from URL with additional query parameters."""
+        video_id = extract_youtube_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s&list=PLtest")
+        assert video_id == "dQw4w9WgXcQ"
+
+    def test_extract_from_invalid_url(self):
+        """Test that invalid URLs return None."""
+        assert extract_youtube_id("https://example.com/video") is None
+        assert extract_youtube_id("not a url") is None
+        assert extract_youtube_id("https://vimeo.com/123456") is None
+
+    def test_extract_from_empty_string(self):
+        """Test that empty string returns None."""
+        assert extract_youtube_id("") is None
+
+    def test_extract_from_none(self):
+        """Test that None returns None."""
+        assert extract_youtube_id(None) is None
+
+
+class TestMediaGenerators:
+    """Test suite for media component generators."""
+
+    def setup_method(self):
+        """Reset ID counter before each test."""
+        reset_id_counter()
+
+    # VideoCard Tests
+
+    def test_generate_video_card_with_video_id(self):
+        """Test generating VideoCard with direct video_id."""
+        card = generate_video_card(
+            title="Introduction to AI",
+            description="Learn the basics of artificial intelligence",
+            video_id="dQw4w9WgXcQ",
+            duration="10:30"
+        )
+
+        assert isinstance(card, A2UIComponent)
+        assert card.type == "a2ui.VideoCard"
+        assert card.props["title"] == "Introduction to AI"
+        assert card.props["description"] == "Learn the basics of artificial intelligence"
+        assert card.props["videoId"] == "dQw4w9WgXcQ"
+        assert card.props["platform"] == "youtube"
+        assert card.props["duration"] == "10:30"
+        assert "thumbnailUrl" not in card.props  # Optional field not included
+
+    def test_generate_video_card_with_youtube_url(self):
+        """Test generating VideoCard with YouTube URL (auto-extracts ID)."""
+        card = generate_video_card(
+            title="Tutorial",
+            description="Step-by-step guide",
+            video_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        )
+
+        assert card.type == "a2ui.VideoCard"
+        assert card.props["videoId"] == "dQw4w9WgXcQ"
+        assert card.props["platform"] == "youtube"
+        assert "videoUrl" not in card.props  # Should use videoId instead
+
+    def test_generate_video_card_with_generic_url(self):
+        """Test generating VideoCard with generic (non-YouTube) video URL."""
+        card = generate_video_card(
+            title="Product Demo",
+            description="Our latest product in action",
+            video_url="https://example.com/video.mp4",
+            thumbnail_url="https://example.com/thumb.jpg"
+        )
+
+        assert card.type == "a2ui.VideoCard"
+        assert card.props["videoUrl"] == "https://example.com/video.mp4"
+        assert card.props["thumbnailUrl"] == "https://example.com/thumb.jpg"
+        assert "videoId" not in card.props  # Not a YouTube video
+        assert "platform" not in card.props  # Generic video
+
+    def test_generate_video_card_with_thumbnail(self):
+        """Test VideoCard with optional thumbnail."""
+        card = generate_video_card(
+            title="Test Video",
+            description="Test",
+            video_id="abc123",
+            thumbnail_url="https://example.com/thumb.jpg"
+        )
+
+        assert card.props["thumbnailUrl"] == "https://example.com/thumb.jpg"
+
+    def test_generate_video_card_missing_both_id_and_url(self):
+        """Test VideoCard raises error when neither video_id nor video_url provided."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_video_card(
+                title="Test",
+                description="Test"
+            )
+
+        assert "requires either video_id or video_url" in str(exc_info.value)
+
+    def test_generate_video_card_json_serialization(self):
+        """Test VideoCard serializes to valid JSON."""
+        card = generate_video_card(
+            title="Test",
+            description="Test",
+            video_id="abc123"
+        )
+
+        card_dict = card.model_dump(exclude_none=True)
+        json_str = json.dumps(card_dict)
+        parsed = json.loads(json_str)
+
+        assert parsed["type"] == "a2ui.VideoCard"
+        assert parsed["props"]["videoId"] == "abc123"
+
+    # ImageCard Tests
+
+    def test_generate_image_card_basic(self):
+        """Test generating ImageCard with required fields."""
+        card = generate_image_card(
+            title="Beautiful Sunset",
+            image_url="https://example.com/sunset.jpg"
+        )
+
+        assert isinstance(card, A2UIComponent)
+        assert card.type == "a2ui.ImageCard"
+        assert card.props["title"] == "Beautiful Sunset"
+        assert card.props["imageUrl"] == "https://example.com/sunset.jpg"
+        assert "altText" not in card.props  # Optional field not included
+        assert "caption" not in card.props
+        assert "credit" not in card.props
+
+    def test_generate_image_card_with_all_fields(self):
+        """Test generating ImageCard with all optional fields."""
+        card = generate_image_card(
+            title="Mountain Landscape",
+            image_url="https://example.com/mountain.jpg",
+            alt_text="Snow-capped mountain peaks at sunrise",
+            caption="The view from base camp at 4,000m elevation",
+            credit="Photo by Jane Smith"
+        )
+
+        assert card.props["title"] == "Mountain Landscape"
+        assert card.props["imageUrl"] == "https://example.com/mountain.jpg"
+        assert card.props["altText"] == "Snow-capped mountain peaks at sunrise"
+        assert card.props["caption"] == "The view from base camp at 4,000m elevation"
+        assert card.props["credit"] == "Photo by Jane Smith"
+
+    def test_generate_image_card_empty_url(self):
+        """Test ImageCard raises error for empty image_url."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_image_card(
+                title="Test",
+                image_url=""
+            )
+
+        assert "requires a valid image_url" in str(exc_info.value)
+
+    def test_generate_image_card_invalid_url_format(self):
+        """Test ImageCard raises error for invalid URL format."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_image_card(
+                title="Test",
+                image_url="not-a-url"
+            )
+
+        assert "must be a valid URL" in str(exc_info.value)
+        assert "http://" in str(exc_info.value) or "https://" in str(exc_info.value)
+
+    def test_generate_image_card_json_serialization(self):
+        """Test ImageCard serializes to valid JSON."""
+        card = generate_image_card(
+            title="Test",
+            image_url="https://example.com/test.jpg",
+            alt_text="Test image"
+        )
+
+        card_dict = card.model_dump(exclude_none=True)
+        json_str = json.dumps(card_dict)
+        parsed = json.loads(json_str)
+
+        assert parsed["type"] == "a2ui.ImageCard"
+        assert parsed["props"]["altText"] == "Test image"
+
+    # PlaylistCard Tests
+
+    def test_generate_playlist_card_youtube(self):
+        """Test generating PlaylistCard for YouTube."""
+        items = [
+            {"title": "Introduction", "videoId": "abc123", "duration": "10:30"},
+            {"title": "Deep Learning", "videoId": "def456", "duration": "15:45"}
+        ]
+
+        card = generate_playlist_card(
+            title="AI Tutorial Series",
+            description="Complete guide to machine learning",
+            items=items,
+            platform="youtube"
+        )
+
+        assert isinstance(card, A2UIComponent)
+        assert card.type == "a2ui.PlaylistCard"
+        assert card.props["title"] == "AI Tutorial Series"
+        assert card.props["description"] == "Complete guide to machine learning"
+        assert card.props["platform"] == "youtube"
+        assert len(card.props["items"]) == 2
+        assert card.props["items"][0]["title"] == "Introduction"
+        assert card.props["items"][0]["videoId"] == "abc123"
+        assert card.props["items"][1]["duration"] == "15:45"
+
+    def test_generate_playlist_card_spotify(self):
+        """Test generating PlaylistCard for Spotify."""
+        items = [
+            {"title": "Track 1", "url": "https://spotify.com/track/1"},
+            {"title": "Track 2", "url": "https://spotify.com/track/2"}
+        ]
+
+        card = generate_playlist_card(
+            title="Focus Music",
+            description="Music for deep work",
+            items=items,
+            platform="spotify"
+        )
+
+        assert card.props["platform"] == "spotify"
+        assert card.props["items"][0]["url"] == "https://spotify.com/track/1"
+
+    def test_generate_playlist_card_custom_platform(self):
+        """Test generating PlaylistCard with custom platform."""
+        items = [
+            {"title": "Item 1", "url": "https://example.com/1"}
+        ]
+
+        card = generate_playlist_card(
+            title="Custom Playlist",
+            description="Custom content",
+            items=items,
+            platform="custom"
+        )
+
+        assert card.props["platform"] == "custom"
+
+    def test_generate_playlist_card_max_items(self):
+        """Test PlaylistCard with maximum 20 items."""
+        items = [
+            {"title": f"Item {i}", "url": f"https://example.com/{i}"}
+            for i in range(20)
+        ]
+
+        card = generate_playlist_card(
+            title="Max Playlist",
+            description="20 items",
+            items=items
+        )
+
+        assert len(card.props["items"]) == 20
+
+    def test_generate_playlist_card_too_many_items(self):
+        """Test PlaylistCard raises error for more than 20 items."""
+        items = [
+            {"title": f"Item {i}", "url": f"https://example.com/{i}"}
+            for i in range(21)
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_playlist_card(
+                title="Too Many",
+                description="Test",
+                items=items
+            )
+
+        assert "supports up to 20 items" in str(exc_info.value)
+        assert "21" in str(exc_info.value)
+
+    def test_generate_playlist_card_empty_items(self):
+        """Test PlaylistCard raises error for empty items list."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_playlist_card(
+                title="Empty",
+                description="Test",
+                items=[]
+            )
+
+        assert "requires at least one item" in str(exc_info.value)
+
+    def test_generate_playlist_card_missing_title_in_item(self):
+        """Test PlaylistCard raises error when item missing title."""
+        items = [
+            {"url": "https://example.com/1"}  # Missing title
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_playlist_card(
+                title="Test",
+                description="Test",
+                items=items
+            )
+
+        assert "missing required key: 'title'" in str(exc_info.value)
+
+    def test_generate_playlist_card_missing_url_and_video_id(self):
+        """Test PlaylistCard raises error when item has neither url nor videoId."""
+        items = [
+            {"title": "Test"}  # Missing both url and videoId
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_playlist_card(
+                title="Test",
+                description="Test",
+                items=items
+            )
+
+        assert "must have either 'url' or 'videoId'" in str(exc_info.value)
+
+    def test_generate_playlist_card_invalid_platform(self):
+        """Test PlaylistCard raises error for invalid platform."""
+        items = [{"title": "Test", "url": "https://example.com"}]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_playlist_card(
+                title="Test",
+                description="Test",
+                items=items,
+                platform="invalid"
+            )
+
+        assert "Invalid platform" in str(exc_info.value)
+        assert "youtube" in str(exc_info.value)
+        assert "spotify" in str(exc_info.value)
+
+    # PodcastCard Tests
+
+    def test_generate_podcast_card_basic(self):
+        """Test generating PodcastCard with required fields."""
+        card = generate_podcast_card(
+            title="Tech Talk",
+            description="Weekly tech discussions",
+            episode_title="AI Revolution",
+            audio_url="https://example.com/episode-5.mp3",
+            duration=45
+        )
+
+        assert isinstance(card, A2UIComponent)
+        assert card.type == "a2ui.PodcastCard"
+        assert card.props["title"] == "Tech Talk"
+        assert card.props["description"] == "Weekly tech discussions"
+        assert card.props["episodeTitle"] == "AI Revolution"
+        assert card.props["audioUrl"] == "https://example.com/episode-5.mp3"
+        assert card.props["duration"] == 45
+        assert "episodeNumber" not in card.props  # Optional field not included
+        assert "platform" not in card.props
+
+    def test_generate_podcast_card_with_all_fields(self):
+        """Test generating PodcastCard with all optional fields."""
+        card = generate_podcast_card(
+            title="The AI Podcast",
+            description="Exploring artificial intelligence",
+            episode_title="Deep Learning Fundamentals",
+            audio_url="https://example.com/episode.mp3",
+            duration=60,
+            episode_number=10,
+            platform="spotify"
+        )
+
+        assert card.props["episodeNumber"] == 10
+        assert card.props["platform"] == "spotify"
+
+    def test_generate_podcast_card_all_platforms(self):
+        """Test PodcastCard with all valid platforms."""
+        platforms = ["spotify", "apple", "rss", "custom"]
+
+        for platform in platforms:
+            card = generate_podcast_card(
+                title="Test",
+                description="Test",
+                episode_title="Test Episode",
+                audio_url="https://example.com/test.mp3",
+                duration=30,
+                platform=platform
+            )
+            assert card.props["platform"] == platform
+
+    def test_generate_podcast_card_empty_audio_url(self):
+        """Test PodcastCard raises error for empty audio_url."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_podcast_card(
+                title="Test",
+                description="Test",
+                episode_title="Test",
+                audio_url="",
+                duration=30
+            )
+
+        assert "requires a valid audio_url" in str(exc_info.value)
+
+    def test_generate_podcast_card_invalid_duration(self):
+        """Test PodcastCard raises error for invalid duration."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_podcast_card(
+                title="Test",
+                description="Test",
+                episode_title="Test",
+                audio_url="https://example.com/test.mp3",
+                duration=0
+            )
+
+        assert "Duration must be positive" in str(exc_info.value)
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_podcast_card(
+                title="Test",
+                description="Test",
+                episode_title="Test",
+                audio_url="https://example.com/test.mp3",
+                duration=-5
+            )
+
+        assert "Duration must be positive" in str(exc_info.value)
+
+    def test_generate_podcast_card_invalid_platform(self):
+        """Test PodcastCard raises error for invalid platform."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_podcast_card(
+                title="Test",
+                description="Test",
+                episode_title="Test",
+                audio_url="https://example.com/test.mp3",
+                duration=30,
+                platform="invalid"
+            )
+
+        assert "Invalid platform" in str(exc_info.value)
+        assert "spotify" in str(exc_info.value)
+        assert "apple" in str(exc_info.value)
+
+    def test_generate_podcast_card_json_serialization(self):
+        """Test PodcastCard serializes to valid JSON."""
+        card = generate_podcast_card(
+            title="Test",
+            description="Test",
+            episode_title="Test Episode",
+            audio_url="https://example.com/test.mp3",
+            duration=30,
+            episode_number=5
+        )
+
+        card_dict = card.model_dump(exclude_none=True)
+        json_str = json.dumps(card_dict)
+        parsed = json.loads(json_str)
+
+        assert parsed["type"] == "a2ui.PodcastCard"
+        assert parsed["props"]["episodeNumber"] == 5
+
+
+class TestMediaGeneratorsIntegration:
+    """Integration tests for media component generators."""
+
+    def setup_method(self):
+        """Reset ID counter before each test."""
+        reset_id_counter()
+
+    def test_media_workflow_complete(self):
+        """Test complete media workflow with all media types."""
+        # Create video card
+        video = generate_video_card(
+            title="Tutorial Video",
+            description="Learn the basics",
+            video_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            duration="10:30"
+        )
+
+        # Create image card
+        image = generate_image_card(
+            title="Diagram",
+            image_url="https://example.com/diagram.jpg",
+            alt_text="System architecture diagram",
+            caption="Overview of the system"
+        )
+
+        # Create playlist
+        playlist = generate_playlist_card(
+            title="Complete Course",
+            description="Full video series",
+            items=[
+                {"title": "Part 1", "videoId": "abc123", "duration": "15:00"},
+                {"title": "Part 2", "videoId": "def456", "duration": "20:00"}
+            ]
+        )
+
+        # Create podcast
+        podcast = generate_podcast_card(
+            title="Tech Podcast",
+            description="Weekly tech news",
+            episode_title="Latest Updates",
+            audio_url="https://example.com/episode.mp3",
+            duration=45,
+            episode_number=10
+        )
+
+        # Verify all components
+        assert video.type == "a2ui.VideoCard"
+        assert image.type == "a2ui.ImageCard"
+        assert playlist.type == "a2ui.PlaylistCard"
+        assert podcast.type == "a2ui.PodcastCard"
+
+        # Verify unique IDs
+        all_ids = [video.id, image.id, playlist.id, podcast.id]
+        assert len(all_ids) == len(set(all_ids))
+
+    def test_media_youtube_url_variations(self):
+        """Test VideoCard handles various YouTube URL formats."""
+        urls = [
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://youtu.be/dQw4w9WgXcQ",
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "http://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        ]
+
+        for url in urls:
+            card = generate_video_card(
+                title="Test",
+                description="Test",
+                video_url=url
+            )
+            assert card.props["videoId"] == "dQw4w9WgXcQ"
+            assert card.props["platform"] == "youtube"
+
+    @pytest.mark.asyncio
+    async def test_media_components_emission(self):
+        """Test emitting media components in AG-UI format."""
+        components = [
+            generate_video_card(
+                title="Video",
+                description="Test video",
+                video_id="abc123"
+            ),
+            generate_image_card(
+                title="Image",
+                image_url="https://example.com/image.jpg"
+            ),
+            generate_podcast_card(
+                title="Podcast",
+                description="Test podcast",
+                episode_title="Episode 1",
+                audio_url="https://example.com/audio.mp3",
+                duration=30
+            )
+        ]
+
+        events = []
+        async for event in emit_components(components):
+            events.append(event)
+
+        assert len(events) == 3
+
+        # Parse and verify VideoCard
+        json_str = events[0].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.VideoCard"
+        assert data["props"]["videoId"] == "abc123"
+
+        # Parse and verify ImageCard
+        json_str = events[1].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.ImageCard"
+        assert data["props"]["imageUrl"] == "https://example.com/image.jpg"
+
+        # Parse and verify PodcastCard
+        json_str = events[2].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.PodcastCard"
+        assert data["props"]["duration"] == 30
+
+    def test_media_rich_content_scenario(self):
+        """Test realistic scenario with media-rich content."""
+        # Simulate a course page with multiple media types
+        components = []
+
+        # Header video
+        components.append(generate_video_card(
+            title="Course Introduction",
+            description="Welcome to the course",
+            video_url="https://www.youtube.com/watch?v=intro123",
+            thumbnail_url="https://example.com/intro-thumb.jpg",
+            duration="5:00"
+        ))
+
+        # Reference images
+        for i in range(3):
+            components.append(generate_image_card(
+                title=f"Diagram {i+1}",
+                image_url=f"https://example.com/diagram-{i+1}.jpg",
+                alt_text=f"Diagram showing step {i+1}",
+                caption=f"Step {i+1}: Key concepts"
+            ))
+
+        # Video playlist
+        components.append(generate_playlist_card(
+            title="Video Lectures",
+            description="Complete video series",
+            items=[
+                {"title": f"Lecture {i}", "videoId": f"lec{i}", "duration": f"{15+i*5}:00"}
+                for i in range(1, 6)
+            ],
+            platform="youtube"
+        ))
+
+        # Podcast episodes
+        for i in range(2):
+            components.append(generate_podcast_card(
+                title="Course Podcast",
+                description="Deep dives into topics",
+                episode_title=f"Episode {i+1}: Advanced Topics",
+                audio_url=f"https://example.com/episode-{i+1}.mp3",
+                duration=60 + i*15,
+                episode_number=i+1,
+                platform="spotify"
+            ))
+
+        # Verify counts
+        assert len(components) == 1 + 3 + 1 + 2  # 1 video + 3 images + 1 playlist + 2 podcasts
+        assert len([c for c in components if c.type == "a2ui.VideoCard"]) == 1
+        assert len([c for c in components if c.type == "a2ui.ImageCard"]) == 3
+        assert len([c for c in components if c.type == "a2ui.PlaylistCard"]) == 1
+        assert len([c for c in components if c.type == "a2ui.PodcastCard"]) == 2
+
+        # Verify all IDs unique
+        all_ids = [c.id for c in components]
+        assert len(all_ids) == len(set(all_ids))

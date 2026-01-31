@@ -15,6 +15,7 @@ A2UI Protocol Compliance:
 
 import uuid
 import json
+import re
 from typing import Any, AsyncGenerator
 from pydantic import BaseModel, Field, field_validator
 
@@ -623,6 +624,383 @@ def generate_news_ticker(items: list[dict[str, str]]) -> A2UIComponent:
     return generate_component("a2ui.NewsTicker", props)
 
 
+# Media Component Generators
+
+def extract_youtube_id(url: str) -> str | None:
+    """
+    Extract YouTube video ID from various YouTube URL formats.
+
+    Supports common YouTube URL formats including:
+    - https://www.youtube.com/watch?v=VIDEO_ID
+    - https://youtu.be/VIDEO_ID
+    - https://www.youtube.com/embed/VIDEO_ID
+    - https://www.youtube.com/v/VIDEO_ID
+    - http://www.youtube.com/watch?v=VIDEO_ID (with or without www)
+
+    Args:
+        url: YouTube URL string to parse
+
+    Returns:
+        11-character video ID if valid YouTube URL, None otherwise
+
+    Examples:
+        >>> extract_youtube_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        "dQw4w9WgXcQ"
+        >>> extract_youtube_id("https://youtu.be/dQw4w9WgXcQ")
+        "dQw4w9WgXcQ"
+        >>> extract_youtube_id("https://www.youtube.com/embed/dQw4w9WgXcQ")
+        "dQw4w9WgXcQ"
+        >>> extract_youtube_id("invalid-url")
+        None
+    """
+    if not url:
+        return None
+
+    # Regex patterns for different YouTube URL formats
+    patterns = [
+        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def generate_video_card(
+    title: str,
+    description: str,
+    video_id: str | None = None,
+    video_url: str | None = None,
+    thumbnail_url: str | None = None,
+    duration: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a VideoCard A2UI component for video content.
+
+    Creates a video card component supporting both YouTube videos (via video_id)
+    and generic video URLs. Automatically extracts video ID from YouTube URLs.
+
+    Args:
+        title: Video title
+        description: Video description/summary
+        video_id: YouTube video ID (11 characters, e.g., "dQw4w9WgXcQ")
+        video_url: Generic video URL or YouTube URL (will auto-extract ID for YouTube)
+        thumbnail_url: Optional thumbnail/preview image URL
+        duration: Optional video duration (e.g., "5:23", "1:30:45")
+
+    Returns:
+        A2UIComponent configured as VideoCard
+
+    Raises:
+        ValueError: If neither video_id nor video_url is provided
+
+    Examples:
+        >>> # YouTube video with ID
+        >>> card = generate_video_card(
+        ...     title="Introduction to AI",
+        ...     description="Learn the basics of artificial intelligence",
+        ...     video_id="dQw4w9WgXcQ",
+        ...     duration="10:30"
+        ... )
+
+        >>> # YouTube video with URL (auto-extracts ID)
+        >>> card = generate_video_card(
+        ...     title="Tutorial",
+        ...     description="Step-by-step guide",
+        ...     video_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        ... )
+
+        >>> # Generic video URL
+        >>> card = generate_video_card(
+        ...     title="Product Demo",
+        ...     description="Our latest product in action",
+        ...     video_url="https://example.com/video.mp4",
+        ...     thumbnail_url="https://example.com/thumb.jpg"
+        ... )
+    """
+    # Validate that we have either video_id or video_url
+    if not video_id and not video_url:
+        raise ValueError("VideoCard requires either video_id or video_url")
+
+    props = {
+        "title": title,
+        "description": description,
+    }
+
+    # Handle YouTube URL extraction
+    if video_url and not video_id:
+        extracted_id = extract_youtube_id(video_url)
+        if extracted_id:
+            video_id = extracted_id
+            props["videoId"] = video_id
+            props["platform"] = "youtube"
+        else:
+            # Generic video URL
+            props["videoUrl"] = video_url
+    elif video_id:
+        # Direct video ID provided (assume YouTube)
+        props["videoId"] = video_id
+        props["platform"] = "youtube"
+
+    # Add optional fields
+    if thumbnail_url:
+        props["thumbnailUrl"] = thumbnail_url
+
+    if duration:
+        props["duration"] = duration
+
+    return generate_component("a2ui.VideoCard", props)
+
+
+def generate_image_card(
+    title: str,
+    image_url: str,
+    alt_text: str | None = None,
+    caption: str | None = None,
+    credit: str | None = None
+) -> A2UIComponent:
+    """
+    Generate an ImageCard A2UI component for image content.
+
+    Creates an image card component with title, image URL, and optional metadata
+    like alt text, caption, and credit attribution.
+
+    Args:
+        title: Image title/heading
+        image_url: URL to the image file (must be valid URL format)
+        alt_text: Alternative text for accessibility (recommended)
+        caption: Image caption/description
+        credit: Photo credit/attribution (e.g., "Photo by John Doe")
+
+    Returns:
+        A2UIComponent configured as ImageCard
+
+    Raises:
+        ValueError: If image_url is empty or invalid format
+
+    Examples:
+        >>> # Basic image card
+        >>> card = generate_image_card(
+        ...     title="Beautiful Sunset",
+        ...     image_url="https://example.com/sunset.jpg"
+        ... )
+
+        >>> # Image card with all metadata
+        >>> card = generate_image_card(
+        ...     title="Mountain Landscape",
+        ...     image_url="https://example.com/mountain.jpg",
+        ...     alt_text="Snow-capped mountain peaks at sunrise",
+        ...     caption="The view from base camp at 4,000m elevation",
+        ...     credit="Photo by Jane Smith"
+        ... )
+    """
+    # Validate image_url
+    if not image_url or not image_url.strip():
+        raise ValueError("ImageCard requires a valid image_url")
+
+    # Basic URL validation (check for http/https)
+    if not image_url.startswith(("http://", "https://")):
+        raise ValueError(f"image_url must be a valid URL starting with http:// or https://, got: {image_url}")
+
+    props = {
+        "title": title,
+        "imageUrl": image_url,
+    }
+
+    # Add optional fields
+    if alt_text:
+        props["altText"] = alt_text
+
+    if caption:
+        props["caption"] = caption
+
+    if credit:
+        props["credit"] = credit
+
+    return generate_component("a2ui.ImageCard", props)
+
+
+def generate_playlist_card(
+    title: str,
+    description: str,
+    items: list[dict[str, str]],
+    platform: str = "youtube"
+) -> A2UIComponent:
+    """
+    Generate a PlaylistCard A2UI component for playlists.
+
+    Creates a playlist card component with a list of media items. Supports
+    YouTube, Spotify, and custom playlists.
+
+    Args:
+        title: Playlist title
+        description: Playlist description/summary
+        items: List of playlist items, each with:
+               - "title": Item title (required)
+               - "url" or "videoId": Item link/ID (required)
+               - "duration": Optional duration
+        platform: Platform type - "youtube", "spotify", or "custom" (default: "youtube")
+
+    Returns:
+        A2UIComponent configured as PlaylistCard with children structure
+
+    Raises:
+        ValueError: If items list is empty or exceeds 20 items
+        ValueError: If items don't have required keys
+        ValueError: If platform is not valid
+
+    Examples:
+        >>> # YouTube playlist
+        >>> card = generate_playlist_card(
+        ...     title="AI Tutorial Series",
+        ...     description="Complete guide to machine learning",
+        ...     items=[
+        ...         {"title": "Introduction", "videoId": "abc123", "duration": "10:30"},
+        ...         {"title": "Deep Learning", "videoId": "def456", "duration": "15:45"}
+        ...     ],
+        ...     platform="youtube"
+        ... )
+
+        >>> # Spotify playlist
+        >>> card = generate_playlist_card(
+        ...     title="Focus Music",
+        ...     description="Music for deep work",
+        ...     items=[
+        ...         {"title": "Track 1", "url": "https://spotify.com/track/1"},
+        ...         {"title": "Track 2", "url": "https://spotify.com/track/2"}
+        ...     ],
+        ...     platform="spotify"
+        ... )
+    """
+    # Validate platform
+    valid_platforms = {"youtube", "spotify", "custom"}
+    if platform not in valid_platforms:
+        raise ValueError(
+            f"Invalid platform: {platform}. "
+            f"Must be one of: {', '.join(valid_platforms)}"
+        )
+
+    # Validate items list
+    if not items:
+        raise ValueError("PlaylistCard requires at least one item")
+
+    if len(items) > 20:
+        raise ValueError(
+            f"PlaylistCard supports up to 20 items, got {len(items)}. "
+            "Consider splitting into multiple playlists."
+        )
+
+    # Validate that all items have required keys (title + url or videoId)
+    for i, item in enumerate(items):
+        if "title" not in item:
+            raise ValueError(f"Item {i} missing required key: 'title'")
+
+        if "url" not in item and "videoId" not in item:
+            raise ValueError(
+                f"Item {i} missing required key: must have either 'url' or 'videoId'"
+            )
+
+    props = {
+        "title": title,
+        "description": description,
+        "platform": platform,
+        "items": items,
+    }
+
+    return generate_component("a2ui.PlaylistCard", props)
+
+
+def generate_podcast_card(
+    title: str,
+    description: str,
+    episode_title: str,
+    audio_url: str,
+    duration: int,
+    episode_number: int | None = None,
+    platform: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a PodcastCard A2UI component for podcast episodes.
+
+    Creates a podcast card component with episode information and audio playback.
+    Supports various podcast platforms and direct audio URLs.
+
+    Args:
+        title: Podcast show title
+        description: Podcast/episode description
+        episode_title: Episode title/name
+        audio_url: URL to audio file (MP3, etc.)
+        duration: Episode duration in minutes
+        episode_number: Optional episode number
+        platform: Optional platform - "spotify", "apple", "rss", or "custom"
+
+    Returns:
+        A2UIComponent configured as PodcastCard
+
+    Raises:
+        ValueError: If audio_url is invalid
+        ValueError: If duration is not positive
+        ValueError: If platform is not valid
+
+    Examples:
+        >>> # Basic podcast card
+        >>> card = generate_podcast_card(
+        ...     title="Tech Talk",
+        ...     description="Weekly tech discussions",
+        ...     episode_title="AI Revolution",
+        ...     audio_url="https://example.com/episode-5.mp3",
+        ...     duration=45
+        ... )
+
+        >>> # Podcast with all metadata
+        >>> card = generate_podcast_card(
+        ...     title="The AI Podcast",
+        ...     description="Exploring artificial intelligence",
+        ...     episode_title="Deep Learning Fundamentals",
+        ...     audio_url="https://example.com/episode.mp3",
+        ...     duration=60,
+        ...     episode_number=10,
+        ...     platform="spotify"
+        ... )
+    """
+    # Validate audio_url
+    if not audio_url or not audio_url.strip():
+        raise ValueError("PodcastCard requires a valid audio_url")
+
+    # Validate duration
+    if duration <= 0:
+        raise ValueError(f"Duration must be positive, got: {duration}")
+
+    # Validate platform if provided
+    if platform:
+        valid_platforms = {"spotify", "apple", "rss", "custom"}
+        if platform not in valid_platforms:
+            raise ValueError(
+                f"Invalid platform: {platform}. "
+                f"Must be one of: {', '.join(valid_platforms)}"
+            )
+
+    props = {
+        "title": title,
+        "description": description,
+        "episodeTitle": episode_title,
+        "audioUrl": audio_url,
+        "duration": duration,
+    }
+
+    # Add optional fields
+    if episode_number is not None:
+        props["episodeNumber"] = episode_number
+
+    if platform:
+        props["platform"] = platform
+
+    return generate_component("a2ui.PodcastCard", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -638,4 +1016,10 @@ __all__ = [
     "generate_trend_indicator",
     "generate_timeline_event",
     "generate_news_ticker",
+    # Media generators
+    "extract_youtube_id",
+    "generate_video_card",
+    "generate_image_card",
+    "generate_playlist_card",
+    "generate_podcast_card",
 ]
