@@ -3133,6 +3133,396 @@ def generate_table_of_contents(
     return generate_component("a2ui.TableOfContents", props)
 
 
+def generate_comparison_table(
+    headers: list[str],
+    rows: list[dict[str, any]],
+    highlighted_column: int | None = None
+) -> A2UIComponent:
+    """
+    Generate a ComparisonTable A2UI component for side-by-side comparisons.
+
+    Creates a comparison table for viewing multiple items or options side by side.
+    Ideal for product comparisons, feature comparisons, or any data requiring
+    structured comparison across multiple dimensions.
+
+    Args:
+        headers: List of column names/headers (2-10 columns)
+        rows: List of row data dictionaries where keys match headers
+        highlighted_column: Optional index (0-based) of column to highlight (typically the winner)
+
+    Returns:
+        A2UIComponent configured as ComparisonTable
+
+    Raises:
+        ValueError: If headers list has fewer than 2 or more than 10 items
+        ValueError: If rows list is empty or has more than 50 rows
+        ValueError: If row data keys don't match headers
+        ValueError: If highlighted_column is out of range
+
+    Examples:
+        >>> # Product comparison
+        >>> table = generate_comparison_table(
+        ...     headers=["Feature", "Product A", "Product B", "Product C"],
+        ...     rows=[
+        ...         {"Feature": "Price", "Product A": "$99", "Product B": "$149", "Product C": "$199"},
+        ...         {"Feature": "Storage", "Product A": "128GB", "Product B": "256GB", "Product C": "512GB"},
+        ...         {"Feature": "RAM", "Product A": "8GB", "Product B": "16GB", "Product C": "32GB"}
+        ...     ],
+        ...     highlighted_column=1
+        ... )
+
+        >>> # Browser feature comparison
+        >>> table = generate_comparison_table(
+        ...     headers=["Browser", "Speed", "Privacy", "Extensions"],
+        ...     rows=[
+        ...         {"Browser": "Chrome", "Speed": "Fast", "Privacy": "Low", "Extensions": "Many"},
+        ...         {"Browser": "Firefox", "Speed": "Fast", "Privacy": "High", "Extensions": "Many"},
+        ...         {"Browser": "Safari", "Speed": "Fast", "Privacy": "Medium", "Extensions": "Few"}
+        ...     ]
+        ... )
+    """
+    # Validate headers
+    if len(headers) < 2:
+        raise ValueError("ComparisonTable requires at least 2 columns")
+
+    if len(headers) > 10:
+        raise ValueError(
+            f"ComparisonTable supports up to 10 columns, got {len(headers)}"
+        )
+
+    # Validate rows
+    if not rows:
+        raise ValueError("ComparisonTable requires at least 1 row")
+
+    if len(rows) > 50:
+        raise ValueError(
+            f"ComparisonTable supports up to 50 rows, got {len(rows)}"
+        )
+
+    # Validate each row has data for all headers
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError(f"Row {i} must be a dictionary")
+
+        for header in headers:
+            if header not in row:
+                raise ValueError(f"Row {i} missing data for header '{header}'")
+
+    # Validate highlighted_column if provided
+    if highlighted_column is not None:
+        if not isinstance(highlighted_column, int):
+            raise ValueError("highlighted_column must be an integer")
+
+        if highlighted_column < 0 or highlighted_column >= len(headers):
+            raise ValueError(
+                f"highlighted_column must be 0-{len(headers)-1}, got {highlighted_column}"
+            )
+
+    props = {
+        "headers": headers,
+        "rows": rows,
+    }
+
+    if highlighted_column is not None:
+        props["highlightedColumn"] = highlighted_column
+
+    return generate_component("a2ui.ComparisonTable", props)
+
+
+def generate_vs_card(
+    item_a: dict[str, str],
+    item_b: dict[str, str],
+    winner: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a VsCard A2UI component for "X vs Y" head-to-head comparisons.
+
+    Creates a visual card comparing two items in a "versus" format.
+    Ideal for product matchups, technology comparisons, or any binary comparison.
+
+    Args:
+        item_a: Dictionary with "name" and "description" for first item
+        item_b: Dictionary with "name" and "description" for second item
+        winner: Optional winner indicator ("a", "b", or None for neutral comparison)
+
+    Returns:
+        A2UIComponent configured as VsCard
+
+    Raises:
+        ValueError: If item_a or item_b missing required keys
+        ValueError: If winner is not "a", "b", or None
+
+    Examples:
+        >>> # Technology comparison
+        >>> card = generate_vs_card(
+        ...     item_a={"name": "React", "description": "Component-based UI library"},
+        ...     item_b={"name": "Vue", "description": "Progressive JavaScript framework"},
+        ...     winner="a"
+        ... )
+
+        >>> # Product comparison (neutral)
+        >>> card = generate_vs_card(
+        ...     item_a={"name": "MacBook Pro", "description": "Apple's premium laptop"},
+        ...     item_b={"name": "Dell XPS", "description": "Dell's flagship ultrabook"}
+        ... )
+    """
+    # Validate item_a
+    if not isinstance(item_a, dict):
+        raise ValueError("item_a must be a dictionary")
+
+    if "name" not in item_a:
+        raise ValueError("item_a must have 'name' field")
+
+    if "description" not in item_a:
+        raise ValueError("item_a must have 'description' field")
+
+    # Validate item_b
+    if not isinstance(item_b, dict):
+        raise ValueError("item_b must be a dictionary")
+
+    if "name" not in item_b:
+        raise ValueError("item_b must have 'name' field")
+
+    if "description" not in item_b:
+        raise ValueError("item_b must have 'description' field")
+
+    # Validate winner
+    if winner is not None and winner not in ["a", "b"]:
+        raise ValueError("winner must be 'a', 'b', or None")
+
+    props = {
+        "itemA": {
+            "name": item_a["name"],
+            "description": item_a["description"]
+        },
+        "itemB": {
+            "name": item_b["name"],
+            "description": item_b["description"]
+        }
+    }
+
+    if winner is not None:
+        props["winner"] = winner
+
+    return generate_component("a2ui.VsCard", props)
+
+
+def generate_feature_matrix(
+    features: list[str],
+    items: list[dict[str, any]],
+    title: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a FeatureMatrix A2UI component for feature comparison across items.
+
+    Creates a matrix showing which features are included/excluded for each item.
+    Ideal for capability matrices, feature comparison charts, or product tiers.
+
+    Args:
+        features: List of feature names (1-20 features)
+        items: List of item dictionaries with "name" and boolean feature flags
+        title: Optional matrix title
+
+    Returns:
+        A2UIComponent configured as FeatureMatrix
+
+    Raises:
+        ValueError: If features list is empty or has more than 20 items
+        ValueError: If items list is empty or has more than 10 items
+        ValueError: If any item missing "name" field
+        ValueError: If feature values are not boolean
+
+    Examples:
+        >>> # Software tier comparison
+        >>> matrix = generate_feature_matrix(
+        ...     features=["API Access", "Priority Support", "Advanced Analytics", "Custom Branding"],
+        ...     items=[
+        ...         {"name": "Free", "API Access": False, "Priority Support": False,
+        ...          "Advanced Analytics": False, "Custom Branding": False},
+        ...         {"name": "Pro", "API Access": True, "Priority Support": False,
+        ...          "Advanced Analytics": True, "Custom Branding": False},
+        ...         {"name": "Enterprise", "API Access": True, "Priority Support": True,
+        ...          "Advanced Analytics": True, "Custom Branding": True}
+        ...     ],
+        ...     title="Plan Features"
+        ... )
+
+        >>> # Phone model comparison
+        >>> matrix = generate_feature_matrix(
+        ...     features=["5G", "Wireless Charging", "Water Resistant", "Face ID"],
+        ...     items=[
+        ...         {"name": "iPhone 12", "5G": True, "Wireless Charging": True,
+        ...          "Water Resistant": True, "Face ID": True},
+        ...         {"name": "iPhone 11", "5G": False, "Wireless Charging": True,
+        ...          "Water Resistant": True, "Face ID": True}
+        ...     ]
+        ... )
+    """
+    # Validate features
+    if not features:
+        raise ValueError("FeatureMatrix requires at least 1 feature")
+
+    if len(features) > 20:
+        raise ValueError(
+            f"FeatureMatrix supports up to 20 features, got {len(features)}"
+        )
+
+    # Validate items
+    if not items:
+        raise ValueError("FeatureMatrix requires at least 1 item")
+
+    if len(items) > 10:
+        raise ValueError(
+            f"FeatureMatrix supports up to 10 items, got {len(items)}"
+        )
+
+    # Validate each item
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise ValueError(f"Item {i} must be a dictionary")
+
+        if "name" not in item:
+            raise ValueError(f"Item {i} must have 'name' field")
+
+        # Check that all features are present and boolean
+        for feature in features:
+            if feature not in item:
+                raise ValueError(f"Item {i} missing feature '{feature}'")
+
+            if not isinstance(item[feature], bool):
+                raise ValueError(
+                    f"Item {i} feature '{feature}' must be boolean, got {type(item[feature]).__name__}"
+                )
+
+    props = {
+        "features": features,
+        "items": items,
+    }
+
+    if title is not None:
+        props["title"] = title
+
+    return generate_component("a2ui.FeatureMatrix", props)
+
+
+def generate_pricing_table(
+    title: str,
+    tiers: list[dict[str, any]],
+    currency: str = "USD",
+    features: list[str] | None = None
+) -> A2UIComponent:
+    """
+    Generate a PricingTable A2UI component for displaying pricing tiers.
+
+    Creates a pricing comparison table for services or products with multiple tiers.
+    Ideal for SaaS pricing pages, subscription plans, or service comparisons.
+
+    Args:
+        title: Table title (e.g., "Choose Your Plan")
+        tiers: List of 1-5 pricing tier dictionaries with name, price, description
+        currency: Currency code (USD, EUR, GBP, etc.) - default USD
+        features: Optional list of features to show in rows
+
+    Returns:
+        A2UIComponent configured as PricingTable
+
+    Raises:
+        ValueError: If title is empty
+        ValueError: If tiers list is empty or has more than 5 tiers
+        ValueError: If any tier missing required fields
+        ValueError: If features length doesn't match features_included length
+
+    Examples:
+        >>> # SaaS pricing table
+        >>> table = generate_pricing_table(
+        ...     title="Choose Your Plan",
+        ...     tiers=[
+        ...         {
+        ...             "name": "Starter",
+        ...             "price": 9,
+        ...             "description": "Perfect for individuals",
+        ...             "features_included": [True, False, False]
+        ...         },
+        ...         {
+        ...             "name": "Pro",
+        ...             "price": 29,
+        ...             "description": "For small teams",
+        ...             "features_included": [True, True, False],
+        ...             "recommended": True
+        ...         },
+        ...         {
+        ...             "name": "Enterprise",
+        ...             "price": 99,
+        ...             "description": "For large organizations",
+        ...             "features_included": [True, True, True]
+        ...         }
+        ...     ],
+        ...     currency="USD",
+        ...     features=["Basic Support", "Priority Support", "Custom Integrations"]
+        ... )
+
+        >>> # Simple pricing (no features)
+        >>> table = generate_pricing_table(
+        ...     title="Subscription Plans",
+        ...     tiers=[
+        ...         {"name": "Monthly", "price": 15, "description": "Billed monthly"},
+        ...         {"name": "Yearly", "price": 150, "description": "Billed annually - Save 17%"}
+        ...     ]
+        ... )
+    """
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("PricingTable title cannot be empty")
+
+    # Validate tiers
+    if not tiers:
+        raise ValueError("PricingTable requires at least 1 tier")
+
+    if len(tiers) > 5:
+        raise ValueError(
+            f"PricingTable supports up to 5 tiers, got {len(tiers)}"
+        )
+
+    # Validate each tier
+    for i, tier in enumerate(tiers):
+        if not isinstance(tier, dict):
+            raise ValueError(f"Tier {i} must be a dictionary")
+
+        if "name" not in tier:
+            raise ValueError(f"Tier {i} must have 'name' field")
+
+        if "price" not in tier:
+            raise ValueError(f"Tier {i} must have 'price' field")
+
+        if "description" not in tier:
+            raise ValueError(f"Tier {i} must have 'description' field")
+
+        # Validate price is a number
+        if not isinstance(tier["price"], (int, float)):
+            raise ValueError(
+                f"Tier {i} price must be a number, got {type(tier['price']).__name__}"
+            )
+
+        # If features provided, validate features_included
+        if features and "features_included" in tier:
+            if len(tier["features_included"]) != len(features):
+                raise ValueError(
+                    f"Tier {i} features_included must have {len(features)} items, "
+                    f"got {len(tier['features_included'])}"
+                )
+
+    props = {
+        "title": title.strip(),
+        "tiers": tiers,
+        "currency": currency,
+    }
+
+    if features is not None:
+        props["features"] = features
+
+    return generate_component("a2ui.PricingTable", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -3183,4 +3573,9 @@ __all__ = [
     "generate_key_takeaways",
     "generate_executive_summary",
     "generate_table_of_contents",
+    # Comparison generators
+    "generate_comparison_table",
+    "generate_vs_card",
+    "generate_feature_matrix",
+    "generate_pricing_table",
 ]

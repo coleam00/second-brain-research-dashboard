@@ -62,6 +62,11 @@ from a2ui_generator import (
     generate_key_takeaways,
     generate_executive_summary,
     generate_table_of_contents,
+    # Comparison generators
+    generate_comparison_table,
+    generate_vs_card,
+    generate_feature_matrix,
+    generate_pricing_table,
 )
 
 
@@ -5242,3 +5247,643 @@ class TestSummaryIntegration:
         assert level_1_count == 3  # 3 level 1 sections (overview, design, findings)
         assert level_2_count == 4  # 4 level 2 subsections (background, objectives, data, analysis)
         assert level_3_count == 3  # 3 level 3 subsections (history, modern, sampling)
+
+
+class TestComparisonTableGenerator:
+    """Test suite for generate_comparison_table function."""
+
+    def test_basic_comparison_table(self):
+        """Test creating a basic comparison table."""
+        reset_id_counter()
+
+        table = generate_comparison_table(
+            headers=["Feature", "Product A", "Product B"],
+            rows=[
+                {"Feature": "Price", "Product A": "$99", "Product B": "$149"},
+                {"Feature": "Storage", "Product A": "128GB", "Product B": "256GB"}
+            ]
+        )
+
+        assert table.type == "a2ui.ComparisonTable"
+        assert table.id == "comparison-table-1"
+        assert table.props["headers"] == ["Feature", "Product A", "Product B"]
+        assert len(table.props["rows"]) == 2
+        assert table.props["rows"][0]["Feature"] == "Price"
+
+    def test_comparison_table_with_highlighted_column(self):
+        """Test comparison table with highlighted column (winner)."""
+        reset_id_counter()
+
+        table = generate_comparison_table(
+            headers=["Feature", "Product A", "Product B", "Product C"],
+            rows=[
+                {"Feature": "Price", "Product A": "$99", "Product B": "$149", "Product C": "$199"},
+                {"Feature": "Storage", "Product A": "128GB", "Product B": "256GB", "Product C": "512GB"}
+            ],
+            highlighted_column=1
+        )
+
+        assert table.props["highlightedColumn"] == 1
+
+    def test_comparison_table_max_columns(self):
+        """Test comparison table with maximum 10 columns."""
+        reset_id_counter()
+
+        headers = [f"Col{i}" for i in range(10)]
+        rows = [{col: f"value{i}" for col in headers} for i in range(3)]
+
+        table = generate_comparison_table(headers=headers, rows=rows)
+
+        assert len(table.props["headers"]) == 10
+        assert len(table.props["rows"]) == 3
+
+    def test_comparison_table_max_rows(self):
+        """Test comparison table with maximum 50 rows."""
+        reset_id_counter()
+
+        headers = ["Feature", "Value A", "Value B"]
+        rows = [{col: f"value{i}" for col in headers} for i in range(50)]
+
+        table = generate_comparison_table(headers=headers, rows=rows)
+
+        assert len(table.props["rows"]) == 50
+
+    def test_comparison_table_too_few_columns(self):
+        """Test that comparison table requires at least 2 columns."""
+        with pytest.raises(ValueError, match="requires at least 2 columns"):
+            generate_comparison_table(
+                headers=["Feature"],
+                rows=[{"Feature": "Price"}]
+            )
+
+    def test_comparison_table_too_many_columns(self):
+        """Test that comparison table fails with more than 10 columns."""
+        headers = [f"Col{i}" for i in range(11)]
+        rows = [{col: "value" for col in headers}]
+
+        with pytest.raises(ValueError, match="supports up to 10 columns"):
+            generate_comparison_table(headers=headers, rows=rows)
+
+    def test_comparison_table_empty_rows(self):
+        """Test that comparison table requires at least 1 row."""
+        with pytest.raises(ValueError, match="requires at least 1 row"):
+            generate_comparison_table(
+                headers=["Feature", "Value"],
+                rows=[]
+            )
+
+    def test_comparison_table_too_many_rows(self):
+        """Test that comparison table fails with more than 50 rows."""
+        headers = ["Feature", "Value"]
+        rows = [{col: "value" for col in headers} for i in range(51)]
+
+        with pytest.raises(ValueError, match="supports up to 50 rows"):
+            generate_comparison_table(headers=headers, rows=rows)
+
+    def test_comparison_table_missing_header_data(self):
+        """Test that comparison table fails if row missing header data."""
+        with pytest.raises(ValueError, match="missing data for header"):
+            generate_comparison_table(
+                headers=["Feature", "Product A", "Product B"],
+                rows=[
+                    {"Feature": "Price", "Product A": "$99"}  # Missing Product B
+                ]
+            )
+
+    def test_comparison_table_invalid_highlighted_column(self):
+        """Test that comparison table fails with invalid highlighted_column."""
+        with pytest.raises(ValueError, match="highlighted_column must be"):
+            generate_comparison_table(
+                headers=["Feature", "Product A"],
+                rows=[{"Feature": "Price", "Product A": "$99"}],
+                highlighted_column=5  # Out of range
+            )
+
+
+class TestVsCardGenerator:
+    """Test suite for generate_vs_card function."""
+
+    def test_basic_vs_card(self):
+        """Test creating a basic vs card."""
+        reset_id_counter()
+
+        card = generate_vs_card(
+            item_a={"name": "React", "description": "Component-based UI library"},
+            item_b={"name": "Vue", "description": "Progressive JavaScript framework"}
+        )
+
+        assert card.type == "a2ui.VsCard"
+        assert card.id == "vs-card-1"
+        assert card.props["itemA"]["name"] == "React"
+        assert card.props["itemB"]["name"] == "Vue"
+        assert "winner" not in card.props
+
+    def test_vs_card_with_winner_a(self):
+        """Test vs card with item A as winner."""
+        reset_id_counter()
+
+        card = generate_vs_card(
+            item_a={"name": "React", "description": "Most popular UI library"},
+            item_b={"name": "Vue", "description": "Popular in China"},
+            winner="a"
+        )
+
+        assert card.props["winner"] == "a"
+
+    def test_vs_card_with_winner_b(self):
+        """Test vs card with item B as winner."""
+        reset_id_counter()
+
+        card = generate_vs_card(
+            item_a={"name": "Product A", "description": "Good features"},
+            item_b={"name": "Product B", "description": "Better features"},
+            winner="b"
+        )
+
+        assert card.props["winner"] == "b"
+
+    def test_vs_card_missing_item_a_name(self):
+        """Test that vs card fails if item_a missing name."""
+        with pytest.raises(ValueError, match="item_a must have 'name' field"):
+            generate_vs_card(
+                item_a={"description": "Missing name"},
+                item_b={"name": "Product B", "description": "Has name"}
+            )
+
+    def test_vs_card_missing_item_a_description(self):
+        """Test that vs card fails if item_a missing description."""
+        with pytest.raises(ValueError, match="item_a must have 'description' field"):
+            generate_vs_card(
+                item_a={"name": "Product A"},
+                item_b={"name": "Product B", "description": "Has description"}
+            )
+
+    def test_vs_card_missing_item_b_name(self):
+        """Test that vs card fails if item_b missing name."""
+        with pytest.raises(ValueError, match="item_b must have 'name' field"):
+            generate_vs_card(
+                item_a={"name": "Product A", "description": "Has name"},
+                item_b={"description": "Missing name"}
+            )
+
+    def test_vs_card_missing_item_b_description(self):
+        """Test that vs card fails if item_b missing description."""
+        with pytest.raises(ValueError, match="item_b must have 'description' field"):
+            generate_vs_card(
+                item_a={"name": "Product A", "description": "Has description"},
+                item_b={"name": "Product B"}
+            )
+
+    def test_vs_card_invalid_winner(self):
+        """Test that vs card fails with invalid winner value."""
+        with pytest.raises(ValueError, match="winner must be 'a', 'b', or None"):
+            generate_vs_card(
+                item_a={"name": "Product A", "description": "Description A"},
+                item_b={"name": "Product B", "description": "Description B"},
+                winner="c"
+            )
+
+
+class TestFeatureMatrixGenerator:
+    """Test suite for generate_feature_matrix function."""
+
+    def test_basic_feature_matrix(self):
+        """Test creating a basic feature matrix."""
+        reset_id_counter()
+
+        matrix = generate_feature_matrix(
+            features=["API Access", "Priority Support"],
+            items=[
+                {"name": "Free", "API Access": False, "Priority Support": False},
+                {"name": "Pro", "API Access": True, "Priority Support": True}
+            ]
+        )
+
+        assert matrix.type == "a2ui.FeatureMatrix"
+        assert matrix.id == "feature-matrix-1"
+        assert matrix.props["features"] == ["API Access", "Priority Support"]
+        assert len(matrix.props["items"]) == 2
+        assert matrix.props["items"][0]["name"] == "Free"
+        assert matrix.props["items"][0]["API Access"] is False
+
+    def test_feature_matrix_with_title(self):
+        """Test feature matrix with optional title."""
+        reset_id_counter()
+
+        matrix = generate_feature_matrix(
+            features=["Feature A", "Feature B"],
+            items=[
+                {"name": "Plan 1", "Feature A": True, "Feature B": False}
+            ],
+            title="Plan Features"
+        )
+
+        assert matrix.props["title"] == "Plan Features"
+
+    def test_feature_matrix_max_features(self):
+        """Test feature matrix with maximum 20 features."""
+        reset_id_counter()
+
+        features = [f"Feature{i}" for i in range(20)]
+        items = [{"name": "Item 1", **{f: True for f in features}}]
+
+        matrix = generate_feature_matrix(features=features, items=items)
+
+        assert len(matrix.props["features"]) == 20
+
+    def test_feature_matrix_max_items(self):
+        """Test feature matrix with maximum 10 items."""
+        reset_id_counter()
+
+        features = ["Feature A", "Feature B"]
+        items = [{"name": f"Item{i}", "Feature A": True, "Feature B": False} for i in range(10)]
+
+        matrix = generate_feature_matrix(features=features, items=items)
+
+        assert len(matrix.props["items"]) == 10
+
+    def test_feature_matrix_empty_features(self):
+        """Test that feature matrix requires at least 1 feature."""
+        with pytest.raises(ValueError, match="requires at least 1 feature"):
+            generate_feature_matrix(
+                features=[],
+                items=[{"name": "Item 1"}]
+            )
+
+    def test_feature_matrix_too_many_features(self):
+        """Test that feature matrix fails with more than 20 features."""
+        features = [f"Feature{i}" for i in range(21)]
+        items = [{"name": "Item 1", **{f: True for f in features}}]
+
+        with pytest.raises(ValueError, match="supports up to 20 features"):
+            generate_feature_matrix(features=features, items=items)
+
+    def test_feature_matrix_empty_items(self):
+        """Test that feature matrix requires at least 1 item."""
+        with pytest.raises(ValueError, match="requires at least 1 item"):
+            generate_feature_matrix(
+                features=["Feature A"],
+                items=[]
+            )
+
+    def test_feature_matrix_too_many_items(self):
+        """Test that feature matrix fails with more than 10 items."""
+        features = ["Feature A"]
+        items = [{"name": f"Item{i}", "Feature A": True} for i in range(11)]
+
+        with pytest.raises(ValueError, match="supports up to 10 items"):
+            generate_feature_matrix(features=features, items=items)
+
+    def test_feature_matrix_missing_item_name(self):
+        """Test that feature matrix fails if item missing name."""
+        with pytest.raises(ValueError, match="must have 'name' field"):
+            generate_feature_matrix(
+                features=["Feature A"],
+                items=[{"Feature A": True}]  # Missing name
+            )
+
+    def test_feature_matrix_missing_feature(self):
+        """Test that feature matrix fails if item missing feature."""
+        with pytest.raises(ValueError, match="missing feature"):
+            generate_feature_matrix(
+                features=["Feature A", "Feature B"],
+                items=[{"name": "Item 1", "Feature A": True}]  # Missing Feature B
+            )
+
+    def test_feature_matrix_non_boolean_feature(self):
+        """Test that feature matrix fails if feature value not boolean."""
+        with pytest.raises(ValueError, match="must be boolean"):
+            generate_feature_matrix(
+                features=["Feature A"],
+                items=[{"name": "Item 1", "Feature A": "yes"}]  # Should be boolean
+            )
+
+
+class TestPricingTableGenerator:
+    """Test suite for generate_pricing_table function."""
+
+    def test_basic_pricing_table(self):
+        """Test creating a basic pricing table."""
+        reset_id_counter()
+
+        table = generate_pricing_table(
+            title="Choose Your Plan",
+            tiers=[
+                {"name": "Starter", "price": 9, "description": "Perfect for individuals"},
+                {"name": "Pro", "price": 29, "description": "For small teams"}
+            ]
+        )
+
+        assert table.type == "a2ui.PricingTable"
+        assert table.id == "pricing-table-1"
+        assert table.props["title"] == "Choose Your Plan"
+        assert len(table.props["tiers"]) == 2
+        assert table.props["tiers"][0]["name"] == "Starter"
+        assert table.props["tiers"][0]["price"] == 9
+        assert table.props["currency"] == "USD"
+
+    def test_pricing_table_with_features(self):
+        """Test pricing table with features list."""
+        reset_id_counter()
+
+        table = generate_pricing_table(
+            title="Pricing Plans",
+            tiers=[
+                {
+                    "name": "Basic",
+                    "price": 10,
+                    "description": "Basic plan",
+                    "features_included": [True, False, False]
+                },
+                {
+                    "name": "Premium",
+                    "price": 30,
+                    "description": "Premium plan",
+                    "features_included": [True, True, True]
+                }
+            ],
+            features=["Basic Support", "Priority Support", "Custom Integrations"]
+        )
+
+        assert table.props["features"] == ["Basic Support", "Priority Support", "Custom Integrations"]
+        assert table.props["tiers"][0]["features_included"] == [True, False, False]
+
+    def test_pricing_table_with_recommended(self):
+        """Test pricing table with recommended tier."""
+        reset_id_counter()
+
+        table = generate_pricing_table(
+            title="Plans",
+            tiers=[
+                {"name": "Basic", "price": 10, "description": "Basic plan"},
+                {"name": "Pro", "price": 30, "description": "Pro plan", "recommended": True}
+            ]
+        )
+
+        assert table.props["tiers"][1]["recommended"] is True
+
+    def test_pricing_table_different_currency(self):
+        """Test pricing table with different currency."""
+        reset_id_counter()
+
+        table = generate_pricing_table(
+            title="Pricing",
+            tiers=[{"name": "Basic", "price": 10, "description": "Basic plan"}],
+            currency="EUR"
+        )
+
+        assert table.props["currency"] == "EUR"
+
+    def test_pricing_table_max_tiers(self):
+        """Test pricing table with maximum 5 tiers."""
+        reset_id_counter()
+
+        tiers = [
+            {"name": f"Tier{i}", "price": i * 10, "description": f"Tier {i}"}
+            for i in range(5)
+        ]
+
+        table = generate_pricing_table(title="Plans", tiers=tiers)
+
+        assert len(table.props["tiers"]) == 5
+
+    def test_pricing_table_empty_title(self):
+        """Test that pricing table requires non-empty title."""
+        with pytest.raises(ValueError, match="title cannot be empty"):
+            generate_pricing_table(
+                title="",
+                tiers=[{"name": "Basic", "price": 10, "description": "Basic plan"}]
+            )
+
+    def test_pricing_table_empty_tiers(self):
+        """Test that pricing table requires at least 1 tier."""
+        with pytest.raises(ValueError, match="requires at least 1 tier"):
+            generate_pricing_table(title="Plans", tiers=[])
+
+    def test_pricing_table_too_many_tiers(self):
+        """Test that pricing table fails with more than 5 tiers."""
+        tiers = [
+            {"name": f"Tier{i}", "price": i * 10, "description": f"Tier {i}"}
+            for i in range(6)
+        ]
+
+        with pytest.raises(ValueError, match="supports up to 5 tiers"):
+            generate_pricing_table(title="Plans", tiers=tiers)
+
+    def test_pricing_table_tier_missing_name(self):
+        """Test that pricing table fails if tier missing name."""
+        with pytest.raises(ValueError, match="must have 'name' field"):
+            generate_pricing_table(
+                title="Plans",
+                tiers=[{"price": 10, "description": "Missing name"}]
+            )
+
+    def test_pricing_table_tier_missing_price(self):
+        """Test that pricing table fails if tier missing price."""
+        with pytest.raises(ValueError, match="must have 'price' field"):
+            generate_pricing_table(
+                title="Plans",
+                tiers=[{"name": "Basic", "description": "Missing price"}]
+            )
+
+    def test_pricing_table_tier_missing_description(self):
+        """Test that pricing table fails if tier missing description."""
+        with pytest.raises(ValueError, match="must have 'description' field"):
+            generate_pricing_table(
+                title="Plans",
+                tiers=[{"name": "Basic", "price": 10}]
+            )
+
+    def test_pricing_table_invalid_price_type(self):
+        """Test that pricing table fails if price not a number."""
+        with pytest.raises(ValueError, match="price must be a number"):
+            generate_pricing_table(
+                title="Plans",
+                tiers=[{"name": "Basic", "price": "ten dollars", "description": "Basic plan"}]
+            )
+
+    def test_pricing_table_features_length_mismatch(self):
+        """Test that pricing table fails if features_included length doesn't match features."""
+        with pytest.raises(ValueError, match="features_included must have"):
+            generate_pricing_table(
+                title="Plans",
+                tiers=[
+                    {
+                        "name": "Basic",
+                        "price": 10,
+                        "description": "Basic plan",
+                        "features_included": [True, False]  # Should have 3 items
+                    }
+                ],
+                features=["Feature A", "Feature B", "Feature C"]
+            )
+
+
+class TestComparisonIntegration:
+    """Integration tests for comparison generators."""
+
+    def test_comparison_integration_product_comparison(self):
+        """Test complete product comparison workflow."""
+        reset_id_counter()
+
+        # Create comparison table
+        table = generate_comparison_table(
+            headers=["Feature", "iPhone 15 Pro", "Samsung S24", "Google Pixel 8"],
+            rows=[
+                {"Feature": "Price", "iPhone 15 Pro": "$999", "Samsung S24": "$899", "Google Pixel 8": "$699"},
+                {"Feature": "Display", "iPhone 15 Pro": "6.1\"", "Samsung S24": "6.2\"", "Google Pixel 8": "6.2\""},
+                {"Feature": "Battery", "iPhone 15 Pro": "3274mAh", "Samsung S24": "4000mAh", "Google Pixel 8": "4575mAh"},
+                {"Feature": "Camera", "iPhone 15 Pro": "48MP", "Samsung S24": "50MP", "Google Pixel 8": "50MP"}
+            ],
+            highlighted_column=3  # Highlight Google Pixel 8
+        )
+
+        assert table.type == "a2ui.ComparisonTable"
+        assert len(table.props["rows"]) == 4
+        assert table.props["highlightedColumn"] == 3
+
+    def test_comparison_integration_software_tiers(self):
+        """Test complete software tier comparison with pricing and features."""
+        reset_id_counter()
+
+        # Create feature matrix
+        matrix = generate_feature_matrix(
+            features=["API Access", "Priority Support", "Advanced Analytics", "Custom Branding", "SLA"],
+            items=[
+                {
+                    "name": "Free",
+                    "API Access": False,
+                    "Priority Support": False,
+                    "Advanced Analytics": False,
+                    "Custom Branding": False,
+                    "SLA": False
+                },
+                {
+                    "name": "Pro",
+                    "API Access": True,
+                    "Priority Support": False,
+                    "Advanced Analytics": True,
+                    "Custom Branding": False,
+                    "SLA": False
+                },
+                {
+                    "name": "Enterprise",
+                    "API Access": True,
+                    "Priority Support": True,
+                    "Advanced Analytics": True,
+                    "Custom Branding": True,
+                    "SLA": True
+                }
+            ],
+            title="Plan Features"
+        )
+
+        # Create pricing table
+        pricing = generate_pricing_table(
+            title="Choose Your Plan",
+            tiers=[
+                {
+                    "name": "Free",
+                    "price": 0,
+                    "description": "For individuals getting started",
+                    "features_included": [False, False, False, False, False]
+                },
+                {
+                    "name": "Pro",
+                    "price": 49,
+                    "description": "For small teams and startups",
+                    "features_included": [True, False, True, False, False],
+                    "recommended": True
+                },
+                {
+                    "name": "Enterprise",
+                    "price": 199,
+                    "description": "For large organizations",
+                    "features_included": [True, True, True, True, True]
+                }
+            ],
+            currency="USD",
+            features=["API Access", "Priority Support", "Advanced Analytics", "Custom Branding", "SLA"]
+        )
+
+        # Verify feature matrix
+        assert matrix.type == "a2ui.FeatureMatrix"
+        assert len(matrix.props["items"]) == 3
+        assert matrix.props["items"][2]["SLA"] is True
+
+        # Verify pricing table
+        assert pricing.type == "a2ui.PricingTable"
+        assert pricing.props["tiers"][1]["recommended"] is True
+        assert len(pricing.props["features"]) == 5
+
+    def test_comparison_integration_head_to_head(self):
+        """Test head-to-head comparison workflow with vs card."""
+        reset_id_counter()
+
+        # Create vs card
+        vs_card = generate_vs_card(
+            item_a={
+                "name": "React",
+                "description": "A JavaScript library for building user interfaces. Created by Meta, widely adopted."
+            },
+            item_b={
+                "name": "Vue.js",
+                "description": "Progressive JavaScript framework. Easy to learn, flexible, and performant."
+            },
+            winner="a"
+        )
+
+        # Create detailed comparison table
+        table = generate_comparison_table(
+            headers=["Aspect", "React", "Vue.js"],
+            rows=[
+                {"Aspect": "Learning Curve", "React": "Medium", "Vue.js": "Easy"},
+                {"Aspect": "Community", "React": "Very Large", "Vue.js": "Large"},
+                {"Aspect": "Performance", "React": "Fast", "Vue.js": "Fast"},
+                {"Aspect": "Job Market", "React": "Excellent", "Vue.js": "Good"},
+                {"Aspect": "Corporate Backing", "React": "Meta", "Vue.js": "Independent"}
+            ],
+            highlighted_column=1  # Highlight React as winner
+        )
+
+        # Verify vs card
+        assert vs_card.type == "a2ui.VsCard"
+        assert vs_card.props["winner"] == "a"
+        assert vs_card.props["itemA"]["name"] == "React"
+
+        # Verify comparison table
+        assert table.type == "a2ui.ComparisonTable"
+        assert len(table.props["rows"]) == 5
+        assert table.props["highlightedColumn"] == 1
+
+    def test_comparison_integration_multi_currency_pricing(self):
+        """Test pricing tables with different currencies."""
+        reset_id_counter()
+
+        # USD pricing
+        usd_pricing = generate_pricing_table(
+            title="US Pricing",
+            tiers=[
+                {"name": "Monthly", "price": 15, "description": "Billed monthly"},
+                {"name": "Yearly", "price": 150, "description": "Billed annually - Save 17%"}
+            ],
+            currency="USD"
+        )
+
+        # EUR pricing
+        eur_pricing = generate_pricing_table(
+            title="EU Pricing",
+            tiers=[
+                {"name": "Monthly", "price": 13, "description": "Billed monthly"},
+                {"name": "Yearly", "price": 130, "description": "Billed annually - Save 17%"}
+            ],
+            currency="EUR"
+        )
+
+        # Verify USD pricing
+        assert usd_pricing.props["currency"] == "USD"
+        assert usd_pricing.props["tiers"][0]["price"] == 15
+
+        # Verify EUR pricing
+        assert eur_pricing.props["currency"] == "EUR"
+        assert eur_pricing.props["tiers"][0]["price"] == 13
