@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { HeadlineCard, TrendIndicator, TimelineEvent, NewsTicker } from "@/components/A2UI/News";
 
 /**
  * A2UI Component Specification
@@ -46,67 +47,10 @@ export type ComponentRenderer = (props: any, children?: React.ReactNode) => Reac
  */
 export const a2uiCatalog: Record<string, ComponentRenderer> = {
   // ===== NEWS COMPONENTS =====
-  "a2ui.HeadlineCard": ({ title, summary, source, published_at, sentiment, image_url }: any) => (
-    <Card className={`${sentiment === 'positive' ? 'border-green-500' : sentiment === 'negative' ? 'border-red-500' : ''}`}>
-      {image_url && <img src={image_url} alt={title} className="w-full h-48 object-cover rounded-t-lg" />}
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          {sentiment && sentiment !== 'neutral' && (
-            <Badge variant={sentiment === 'positive' ? 'default' : 'destructive'}>
-              {sentiment}
-            </Badge>
-          )}
-        </div>
-        <CardDescription>{source} • {new Date(published_at).toLocaleDateString()}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{summary}</p>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.TrendIndicator": ({ metric, value, change, trend, period }: any) => (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-      <div className="flex-1">
-        <div className="text-sm font-medium">{metric}</div>
-        <div className="text-2xl font-bold">{value}</div>
-      </div>
-      <div className={`flex items-center gap-1 ${trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
-        <span className="text-lg">{trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}</span>
-        <span className="font-semibold">{change}</span>
-      </div>
-      {period && <div className="text-xs text-muted-foreground">{period}</div>}
-    </div>
-  ),
-
-  "a2ui.TimelineEvent": ({ timestamp, title, description, category, status }: any) => (
-    <div className="flex gap-4 pb-4 border-l-2 border-muted pl-4 relative">
-      <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-primary border-4 border-background" />
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-semibold">{title}</span>
-          {category && <Badge variant="outline" className="text-xs">{category}</Badge>}
-          {status && <Badge variant="secondary" className="text-xs">{status}</Badge>}
-        </div>
-        <div className="text-xs text-muted-foreground mb-1">{new Date(timestamp).toLocaleString()}</div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  ),
-
-  "a2ui.NewsTicker": ({ items }: any) => (
-    <div className="overflow-hidden bg-muted/30 rounded-lg p-2">
-      <div className="flex gap-6 animate-scroll whitespace-nowrap">
-        {items?.map((item: any, idx: number) => (
-          <span key={idx} className="inline-flex items-center gap-2">
-            <Badge variant="outline">{item.source}</Badge>
-            <span className="text-sm">{item.headline}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  ),
+  "a2ui.HeadlineCard": (props: any) => <HeadlineCard {...props} />,
+  "a2ui.TrendIndicator": (props: any) => <TrendIndicator {...props} />,
+  "a2ui.TimelineEvent": (props: any) => <TimelineEvent {...props} />,
+  "a2ui.NewsTicker": (props: any) => <NewsTicker {...props} />,
 
   // ===== MEDIA COMPONENTS =====
   "a2ui.VideoCard": ({ title, description, thumbnail_url, duration, platform, url }: any) => (
