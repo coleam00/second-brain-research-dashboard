@@ -1001,6 +1001,514 @@ def generate_podcast_card(
     return generate_component("a2ui.PodcastCard", props)
 
 
+# Data Component Generators
+
+def generate_stat_card(
+    title: str,
+    value: str,
+    unit: str | None = None,
+    change: float | None = None,
+    change_type: str = "neutral",
+    highlight: bool = False
+) -> A2UIComponent:
+    """
+    Generate a StatCard A2UI component for displaying statistics.
+
+    Creates a stat card component showing a key metric with optional unit,
+    change indicator, and highlighting. Useful for dashboards and KPIs.
+
+    Args:
+        title: Statistic label/title (e.g., "Total Users", "Revenue")
+        value: Statistic value (can be string or number, e.g., "1,234", "$5.2M")
+        unit: Optional unit suffix (e.g., "%", "$", "points", "users")
+        change: Optional change value (percentage or absolute)
+        change_type: Change indicator - "positive", "negative", or "neutral" (default)
+        highlight: Whether to highlight this stat as important (default: False)
+
+    Returns:
+        A2UIComponent configured as StatCard
+
+    Raises:
+        ValueError: If change_type is not valid
+
+    Examples:
+        >>> # Basic stat card
+        >>> card = generate_stat_card(
+        ...     title="Total Users",
+        ...     value="1,234"
+        ... )
+
+        >>> # Stat card with all features
+        >>> card = generate_stat_card(
+        ...     title="Revenue",
+        ...     value="$5.2M",
+        ...     unit="USD",
+        ...     change=12.5,
+        ...     change_type="positive",
+        ...     highlight=True
+        ... )
+
+        >>> # Percentage stat with negative change
+        >>> card = generate_stat_card(
+        ...     title="Error Rate",
+        ...     value="2.3",
+        ...     unit="%",
+        ...     change=-0.5,
+        ...     change_type="positive"  # Lower error rate is positive
+        ... )
+    """
+    # Validate change_type
+    valid_change_types = {"positive", "negative", "neutral"}
+    if change_type not in valid_change_types:
+        raise ValueError(
+            f"Invalid change_type: {change_type}. "
+            f"Must be one of: {', '.join(valid_change_types)}"
+        )
+
+    props = {
+        "title": title,
+        "value": value,
+        "changeType": change_type,
+        "highlight": highlight,
+    }
+
+    # Add optional fields
+    if unit:
+        props["unit"] = unit
+
+    if change is not None:
+        props["change"] = change
+
+    return generate_component("a2ui.StatCard", props)
+
+
+def generate_metric_row(
+    label: str,
+    value: str,
+    unit: str | None = None,
+    status: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a MetricRow A2UI component for displaying key metrics.
+
+    Creates a compact row-based metric display with optional status indicator.
+    Useful for lists of related metrics or KPI dashboards.
+
+    Args:
+        label: Metric label/name (e.g., "CPU Usage", "Response Time")
+        value: Metric value (string or number)
+        unit: Optional unit (e.g., "%", "ms", "MB")
+        status: Optional status - "good", "warning", "critical", or "neutral"
+
+    Returns:
+        A2UIComponent configured as MetricRow
+
+    Raises:
+        ValueError: If status is not valid
+
+    Examples:
+        >>> # Basic metric row
+        >>> row = generate_metric_row(
+        ...     label="CPU Usage",
+        ...     value="45"
+        ... )
+
+        >>> # Metric with unit and status
+        >>> row = generate_metric_row(
+        ...     label="Response Time",
+        ...     value="125",
+        ...     unit="ms",
+        ...     status="good"
+        ... )
+
+        >>> # Warning status metric
+        >>> row = generate_metric_row(
+        ...     label="Memory Usage",
+        ...     value="85",
+        ...     unit="%",
+        ...     status="warning"
+        ... )
+    """
+    # Validate status if provided
+    if status:
+        valid_statuses = {"good", "warning", "critical", "neutral"}
+        if status not in valid_statuses:
+            raise ValueError(
+                f"Invalid status: {status}. "
+                f"Must be one of: {', '.join(valid_statuses)}"
+            )
+
+    props = {
+        "label": label,
+        "value": value,
+    }
+
+    # Add optional fields
+    if unit:
+        props["unit"] = unit
+
+    if status:
+        props["status"] = status
+
+    return generate_component("a2ui.MetricRow", props)
+
+
+def generate_progress_ring(
+    label: str,
+    current: float,
+    maximum: float = 100,
+    unit: str | None = None,
+    color: str = "blue"
+) -> A2UIComponent:
+    """
+    Generate a ProgressRing A2UI component (circular progress indicator).
+
+    Creates a circular progress ring showing current value out of maximum.
+    Automatically calculates percentage. Useful for goals, completion, etc.
+
+    Args:
+        label: Progress label (e.g., "Course Progress", "Storage Used")
+        current: Current value (e.g., 75)
+        maximum: Maximum value (default: 100)
+        unit: Optional unit (e.g., "%", "GB", "tasks")
+        color: Ring color - "blue", "green", "red", "yellow", "purple", "gray" (default: "blue")
+
+    Returns:
+        A2UIComponent configured as ProgressRing
+
+    Raises:
+        ValueError: If current or maximum is negative
+        ValueError: If color is not valid
+
+    Examples:
+        >>> # Basic progress ring (75%)
+        >>> ring = generate_progress_ring(
+        ...     label="Course Progress",
+        ...     current=75
+        ... )
+
+        >>> # Storage usage with custom max and unit
+        >>> ring = generate_progress_ring(
+        ...     label="Storage Used",
+        ...     current=45.2,
+        ...     maximum=100,
+        ...     unit="GB",
+        ...     color="green"
+        ... )
+
+        >>> # Task completion
+        >>> ring = generate_progress_ring(
+        ...     label="Tasks Complete",
+        ...     current=8,
+        ...     maximum=10,
+        ...     unit="tasks",
+        ...     color="purple"
+        ... )
+    """
+    # Validate current and maximum
+    if current < 0:
+        raise ValueError(f"Current value cannot be negative, got: {current}")
+
+    if maximum <= 0:
+        raise ValueError(f"Maximum value must be positive, got: {maximum}")
+
+    # Validate color
+    valid_colors = {"blue", "green", "red", "yellow", "purple", "gray"}
+    if color not in valid_colors:
+        raise ValueError(
+            f"Invalid color: {color}. "
+            f"Must be one of: {', '.join(valid_colors)}"
+        )
+
+    props = {
+        "label": label,
+        "current": current,
+        "maximum": maximum,
+        "color": color,
+    }
+
+    # Add optional fields
+    if unit:
+        props["unit"] = unit
+
+    return generate_component("a2ui.ProgressRing", props)
+
+
+def generate_comparison_bar(
+    label: str,
+    items: list[dict[str, any]],
+    max_value: float | None = None
+) -> A2UIComponent:
+    """
+    Generate a ComparisonBar A2UI component for comparing multiple values.
+
+    Creates a comparison bar chart for visualizing relative values.
+    Supports up to 10 items with automatic or manual max value.
+
+    Args:
+        label: Comparison label/title (e.g., "Browser Market Share", "Team Performance")
+        items: List of items to compare, each with:
+                - "label": Item label (required)
+                - "value": Item value (required, number)
+                - "color": Optional color (hex or name)
+        max_value: Optional maximum value for scale (auto-calculated if not provided)
+
+    Returns:
+        A2UIComponent configured as ComparisonBar
+
+    Raises:
+        ValueError: If items list is empty or exceeds 10 items
+        ValueError: If items don't have required keys
+        ValueError: If max_value is negative
+
+    Examples:
+        >>> # Browser market share comparison
+        >>> bar = generate_comparison_bar(
+        ...     label="Browser Market Share",
+        ...     items=[
+        ...         {"label": "Chrome", "value": 65.5, "color": "green"},
+        ...         {"label": "Safari", "value": 18.2, "color": "blue"},
+        ...         {"label": "Firefox", "value": 8.1, "color": "orange"},
+        ...         {"label": "Edge", "value": 5.8, "color": "teal"}
+        ...     ]
+        ... )
+
+        >>> # Team performance with auto max
+        >>> bar = generate_comparison_bar(
+        ...     label="Team Performance",
+        ...     items=[
+        ...         {"label": "Team A", "value": 92},
+        ...         {"label": "Team B", "value": 88},
+        ...         {"label": "Team C", "value": 95}
+        ...     ]
+        ... )
+    """
+    # Validate items list
+    if not items:
+        raise ValueError("ComparisonBar requires at least one item")
+
+    if len(items) > 10:
+        raise ValueError(
+            f"ComparisonBar supports up to 10 items, got {len(items)}. "
+            "Consider using a different visualization for more items."
+        )
+
+    # Validate that all items have required keys
+    for i, item in enumerate(items):
+        if "label" not in item:
+            raise ValueError(f"Item {i} missing required key: 'label'")
+
+        if "value" not in item:
+            raise ValueError(f"Item {i} missing required key: 'value'")
+
+        # Validate value is a number
+        if not isinstance(item["value"], (int, float)):
+            raise ValueError(
+                f"Item {i} value must be a number, got: {type(item['value']).__name__}"
+            )
+
+    # Auto-calculate max_value if not provided
+    if max_value is None:
+        max_value = max(item["value"] for item in items)
+
+    # Validate max_value
+    if max_value < 0:
+        raise ValueError(f"max_value cannot be negative, got: {max_value}")
+
+    props = {
+        "label": label,
+        "items": items,
+        "maxValue": max_value,
+    }
+
+    return generate_component("a2ui.ComparisonBar", props)
+
+
+def generate_data_table(
+    headers: list[str],
+    rows: list[list[any]],
+    sortable: bool = False,
+    filterable: bool = False,
+    striped: bool = True
+) -> A2UIComponent:
+    """
+    Generate a DataTable A2UI component for tabular data.
+
+    Creates a data table with headers and rows. Supports sorting, filtering,
+    and striped styling. Maximum 50 rows for performance.
+
+    Args:
+        headers: List of column header names
+        rows: List of data rows (each row is a list of cell values)
+        sortable: Enable column sorting (default: False)
+        filterable: Enable table filtering (default: False)
+        striped: Use alternating row colors (default: True)
+
+    Returns:
+        A2UIComponent configured as DataTable
+
+    Raises:
+        ValueError: If headers is empty
+        ValueError: If rows is empty or exceeds 50 rows
+        ValueError: If row lengths don't match header length
+
+    Examples:
+        >>> # Basic data table
+        >>> table = generate_data_table(
+        ...     headers=["Name", "Age", "City"],
+        ...     rows=[
+        ...         ["Alice", 28, "New York"],
+        ...         ["Bob", 34, "San Francisco"],
+        ...         ["Charlie", 23, "Boston"]
+        ...     ]
+        ... )
+
+        >>> # Sortable and filterable table
+        >>> table = generate_data_table(
+        ...     headers=["Product", "Price", "Stock", "Status"],
+        ...     rows=[
+        ...         ["Widget A", "$29.99", 150, "In Stock"],
+        ...         ["Widget B", "$39.99", 0, "Out of Stock"],
+        ...         ["Widget C", "$19.99", 45, "Low Stock"]
+        ...     ],
+        ...     sortable=True,
+        ...     filterable=True,
+        ...     striped=True
+        ... )
+    """
+    # Validate headers
+    if not headers:
+        raise ValueError("DataTable requires at least one header")
+
+    # Validate rows
+    if not rows:
+        raise ValueError("DataTable requires at least one row")
+
+    if len(rows) > 50:
+        raise ValueError(
+            f"DataTable supports up to 50 rows for performance, got {len(rows)}. "
+            "Consider pagination or filtering for larger datasets."
+        )
+
+    # Validate that all rows have the same length as headers
+    header_count = len(headers)
+    for i, row in enumerate(rows):
+        if len(row) != header_count:
+            raise ValueError(
+                f"Row {i} has {len(row)} cells, but expected {header_count} "
+                f"to match headers: {headers}"
+            )
+
+    props = {
+        "headers": headers,
+        "rows": rows,
+        "sortable": sortable,
+        "filterable": filterable,
+        "striped": striped,
+    }
+
+    return generate_component("a2ui.DataTable", props)
+
+
+def generate_mini_chart(
+    chart_type: str,
+    data_points: list[float],
+    labels: list[str] | None = None,
+    title: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a MiniChart A2UI component for small data visualizations.
+
+    Creates a compact chart for visualizing trends and patterns.
+    Supports multiple chart types with 5-100 data points.
+
+    Args:
+        chart_type: Chart type - "line", "bar", "area", "pie", or "donut"
+        data_points: List of numeric data points (5-100 points)
+        labels: Optional list of labels (one per data point)
+        title: Optional chart title
+
+    Returns:
+        A2UIComponent configured as MiniChart
+
+    Raises:
+        ValueError: If chart_type is not valid
+        ValueError: If data_points has fewer than 5 or more than 100 points
+        ValueError: If labels provided but length doesn't match data_points
+
+    Examples:
+        >>> # Line chart for trend
+        >>> chart = generate_mini_chart(
+        ...     chart_type="line",
+        ...     data_points=[10, 12, 15, 14, 18, 22, 25],
+        ...     title="Weekly Sales"
+        ... )
+
+        >>> # Bar chart with labels
+        >>> chart = generate_mini_chart(
+        ...     chart_type="bar",
+        ...     data_points=[45, 62, 38, 55, 70],
+        ...     labels=["Q1", "Q2", "Q3", "Q4", "Q5"],
+        ...     title="Quarterly Revenue"
+        ... )
+
+        >>> # Pie chart for distribution
+        >>> chart = generate_mini_chart(
+        ...     chart_type="pie",
+        ...     data_points=[35, 25, 20, 15, 5],
+        ...     labels=["Chrome", "Safari", "Firefox", "Edge", "Other"],
+        ...     title="Browser Share"
+        ... )
+    """
+    # Validate chart_type
+    valid_chart_types = {"line", "bar", "area", "pie", "donut"}
+    if chart_type not in valid_chart_types:
+        raise ValueError(
+            f"Invalid chart_type: {chart_type}. "
+            f"Must be one of: {', '.join(valid_chart_types)}"
+        )
+
+    # Validate data_points
+    if len(data_points) < 5:
+        raise ValueError(
+            f"MiniChart requires at least 5 data points, got {len(data_points)}"
+        )
+
+    if len(data_points) > 100:
+        raise ValueError(
+            f"MiniChart supports up to 100 data points, got {len(data_points)}. "
+            "Consider data aggregation or a different visualization."
+        )
+
+    # Validate all data points are numbers
+    for i, point in enumerate(data_points):
+        if not isinstance(point, (int, float)):
+            raise ValueError(
+                f"Data point {i} must be a number, got: {type(point).__name__}"
+            )
+
+    # Validate labels if provided
+    if labels is not None:
+        if len(labels) != len(data_points):
+            raise ValueError(
+                f"Labels length ({len(labels)}) must match data_points length ({len(data_points)})"
+            )
+
+    props = {
+        "chartType": chart_type,
+        "dataPoints": data_points,
+    }
+
+    # Add optional fields
+    if labels:
+        props["labels"] = labels
+
+    if title:
+        props["title"] = title
+
+    return generate_component("a2ui.MiniChart", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -1022,4 +1530,11 @@ __all__ = [
     "generate_image_card",
     "generate_playlist_card",
     "generate_podcast_card",
+    # Data generators
+    "generate_stat_card",
+    "generate_metric_row",
+    "generate_progress_ring",
+    "generate_comparison_bar",
+    "generate_data_table",
+    "generate_mini_chart",
 ]
