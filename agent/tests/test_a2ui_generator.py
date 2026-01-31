@@ -40,6 +40,11 @@ from a2ui_generator import (
     generate_comparison_bar,
     generate_data_table,
     generate_mini_chart,
+    # List generators
+    generate_ranked_item,
+    generate_checklist_item,
+    generate_pro_con_item,
+    generate_bullet_point,
 )
 
 
@@ -2601,3 +2606,724 @@ class TestDataGeneratorsIntegration:
         assert components[3].type == "a2ui.MiniChart"
         assert components[4].type == "a2ui.ComparisonBar"
         assert components[5].type == "a2ui.DataTable"
+
+
+class TestRankedItemGenerator:
+    """Test suite for generate_ranked_item function."""
+
+    def test_basic_ranked_item(self):
+        """Test creating a basic ranked item with minimum required fields."""
+        reset_id_counter()
+        item = generate_ranked_item(rank=1, title="GPT-4")
+
+        assert item.type == "a2ui.RankedItem"
+        assert item.id == "ranked-item-1"
+        assert item.props["rank"] == 1
+        assert item.props["title"] == "GPT-4"
+        assert item.props["scoreMax"] == 10  # Default value
+        assert "description" not in item.props
+        assert "score" not in item.props
+        assert "icon" not in item.props
+
+    def test_ranked_item_with_all_fields(self):
+        """Test ranked item with all optional fields."""
+        item = generate_ranked_item(
+            rank=1,
+            title="Tesla Model 3",
+            description="Best-selling electric vehicle worldwide",
+            score=9.5,
+            score_max=10,
+            icon="trophy"
+        )
+
+        assert item.type == "a2ui.RankedItem"
+        assert item.props["rank"] == 1
+        assert item.props["title"] == "Tesla Model 3"
+        assert item.props["description"] == "Best-selling electric vehicle worldwide"
+        assert item.props["score"] == 9.5
+        assert item.props["scoreMax"] == 10
+        assert item.props["icon"] == "trophy"
+
+    def test_ranked_item_different_ranks(self):
+        """Test ranked items with various rank positions."""
+        reset_id_counter()
+        item1 = generate_ranked_item(rank=1, title="First Place")
+        item2 = generate_ranked_item(rank=5, title="Fifth Place")
+        item3 = generate_ranked_item(rank=100, title="Hundredth Place")
+
+        assert item1.props["rank"] == 1
+        assert item2.props["rank"] == 5
+        assert item3.props["rank"] == 100
+
+    def test_ranked_item_score_variations(self):
+        """Test ranked item with different score values."""
+        # No score
+        item1 = generate_ranked_item(rank=1, title="No Score")
+        assert "score" not in item1.props
+
+        # Zero score
+        item2 = generate_ranked_item(rank=2, title="Zero Score", score=0)
+        assert item2.props["score"] == 0
+
+        # Mid score
+        item3 = generate_ranked_item(rank=3, title="Mid Score", score=5.5, score_max=10)
+        assert item3.props["score"] == 5.5
+
+        # Max score
+        item4 = generate_ranked_item(rank=4, title="Max Score", score=10, score_max=10)
+        assert item4.props["score"] == 10
+
+    def test_ranked_item_custom_score_max(self):
+        """Test ranked item with custom score_max values."""
+        item1 = generate_ranked_item(rank=1, title="5 Stars", score=4.5, score_max=5)
+        assert item1.props["score"] == 4.5
+        assert item1.props["scoreMax"] == 5
+
+        item2 = generate_ranked_item(rank=2, title="100 Points", score=87, score_max=100)
+        assert item2.props["score"] == 87
+        assert item2.props["scoreMax"] == 100
+
+    def test_ranked_item_top_three_highlighting(self):
+        """Test that top 3 ranks can be highlighted."""
+        # This tests the data is correct for UI to highlight top items
+        reset_id_counter()
+        top1 = generate_ranked_item(rank=1, title="Gold", icon="trophy")
+        top2 = generate_ranked_item(rank=2, title="Silver", icon="medal")
+        top3 = generate_ranked_item(rank=3, title="Bronze", icon="medal")
+
+        assert top1.props["rank"] == 1
+        assert top2.props["rank"] == 2
+        assert top3.props["rank"] == 3
+
+    def test_ranked_item_invalid_rank(self):
+        """Test that invalid rank values raise errors."""
+        with pytest.raises(ValueError, match="Rank must be >= 1"):
+            generate_ranked_item(rank=0, title="Invalid")
+
+        with pytest.raises(ValueError, match="Rank must be >= 1"):
+            generate_ranked_item(rank=-1, title="Invalid")
+
+    def test_ranked_item_invalid_score(self):
+        """Test that invalid scores raise errors."""
+        with pytest.raises(ValueError, match="Score cannot be negative"):
+            generate_ranked_item(rank=1, title="Test", score=-1)
+
+        with pytest.raises(ValueError, match="cannot exceed score_max"):
+            generate_ranked_item(rank=1, title="Test", score=11, score_max=10)
+
+    def test_ranked_item_invalid_score_max(self):
+        """Test that invalid score_max values raise errors."""
+        with pytest.raises(ValueError, match="score_max must be positive"):
+            generate_ranked_item(rank=1, title="Test", score_max=0)
+
+        with pytest.raises(ValueError, match="score_max must be positive"):
+            generate_ranked_item(rank=1, title="Test", score_max=-5)
+
+    def test_ranked_item_json_serialization(self):
+        """Test that ranked item can be serialized to JSON."""
+        item = generate_ranked_item(
+            rank=1,
+            title="Test Item",
+            description="Test description",
+            score=8.5,
+            score_max=10,
+            icon="star"
+        )
+
+        json_str = json.dumps(item.model_dump(exclude_none=True))
+        data = json.loads(json_str)
+
+        assert data["type"] == "a2ui.RankedItem"
+        assert data["props"]["rank"] == 1
+        assert data["props"]["score"] == 8.5
+
+
+class TestChecklistItemGenerator:
+    """Test suite for generate_checklist_item function."""
+
+    def test_basic_checklist_item(self):
+        """Test creating a basic checklist item."""
+        reset_id_counter()
+        item = generate_checklist_item(text="Complete project proposal")
+
+        assert item.type == "a2ui.ChecklistItem"
+        assert item.id == "checklist-item-1"
+        assert item.props["text"] == "Complete project proposal"
+        assert item.props["checked"] is False
+        assert "priority" not in item.props
+        assert "dueDate" not in item.props
+
+    def test_checklist_item_checked(self):
+        """Test checked checklist item."""
+        item = generate_checklist_item(text="Review PR #123", checked=True)
+
+        assert item.props["text"] == "Review PR #123"
+        assert item.props["checked"] is True
+
+    def test_checklist_item_with_priority(self):
+        """Test checklist items with different priority levels."""
+        high = generate_checklist_item(text="Urgent task", priority="high")
+        medium = generate_checklist_item(text="Normal task", priority="medium")
+        low = generate_checklist_item(text="Low priority task", priority="low")
+
+        assert high.props["priority"] == "high"
+        assert medium.props["priority"] == "medium"
+        assert low.props["priority"] == "low"
+
+    def test_checklist_item_with_due_date(self):
+        """Test checklist item with due date."""
+        item = generate_checklist_item(
+            text="Submit quarterly report",
+            due_date="2026-02-15"
+        )
+
+        assert item.props["dueDate"] == "2026-02-15"
+
+    def test_checklist_item_all_fields(self):
+        """Test checklist item with all optional fields."""
+        item = generate_checklist_item(
+            text="Submit quarterly report",
+            checked=False,
+            priority="high",
+            due_date="2026-02-15"
+        )
+
+        assert item.props["text"] == "Submit quarterly report"
+        assert item.props["checked"] is False
+        assert item.props["priority"] == "high"
+        assert item.props["dueDate"] == "2026-02-15"
+
+    def test_checklist_item_completed_with_metadata(self):
+        """Test completed checklist item with all metadata."""
+        item = generate_checklist_item(
+            text="Update documentation",
+            checked=True,
+            priority="low",
+            due_date="2026-01-30"
+        )
+
+        assert item.props["checked"] is True
+        assert item.props["priority"] == "low"
+        assert item.props["dueDate"] == "2026-01-30"
+
+    def test_checklist_item_text_trimming(self):
+        """Test that whitespace in text is trimmed."""
+        item = generate_checklist_item(text="  Trimmed text  ")
+        assert item.props["text"] == "Trimmed text"
+
+    def test_checklist_item_empty_text(self):
+        """Test that empty text raises error."""
+        with pytest.raises(ValueError, match="text cannot be empty"):
+            generate_checklist_item(text="")
+
+        with pytest.raises(ValueError, match="text cannot be empty"):
+            generate_checklist_item(text="   ")
+
+    def test_checklist_item_invalid_priority(self):
+        """Test that invalid priority values raise errors."""
+        with pytest.raises(ValueError, match="Invalid priority"):
+            generate_checklist_item(text="Task", priority="urgent")
+
+        with pytest.raises(ValueError, match="Invalid priority"):
+            generate_checklist_item(text="Task", priority="critical")
+
+    def test_checklist_item_json_serialization(self):
+        """Test that checklist item can be serialized to JSON."""
+        item = generate_checklist_item(
+            text="Test task",
+            checked=True,
+            priority="high",
+            due_date="2026-02-01"
+        )
+
+        json_str = json.dumps(item.model_dump(exclude_none=True))
+        data = json.loads(json_str)
+
+        assert data["type"] == "a2ui.ChecklistItem"
+        assert data["props"]["text"] == "Test task"
+        assert data["props"]["checked"] is True
+
+
+class TestProConItemGenerator:
+    """Test suite for generate_pro_con_item function."""
+
+    def test_basic_pro_con_item(self):
+        """Test creating a basic pros/cons item."""
+        reset_id_counter()
+        item = generate_pro_con_item(
+            title="Remote Work",
+            pros=["Flexible schedule", "No commute"],
+            cons=["Less interaction", "Isolation"]
+        )
+
+        assert item.type == "a2ui.ProConItem"
+        assert item.id == "pro-con-item-1"
+        assert item.props["title"] == "Remote Work"
+        assert len(item.props["pros"]) == 2
+        assert len(item.props["cons"]) == 2
+        assert "verdict" not in item.props
+
+    def test_pro_con_item_with_verdict(self):
+        """Test pros/cons item with verdict."""
+        item = generate_pro_con_item(
+            title="Electric Vehicle",
+            pros=["Lower running costs", "Environmentally friendly"],
+            cons=["Higher upfront cost", "Limited charging"],
+            verdict="Best for urban commuters with home charging"
+        )
+
+        assert item.props["verdict"] == "Best for urban commuters with home charging"
+
+    def test_pro_con_item_single_items(self):
+        """Test pros/cons with minimum items (1 each)."""
+        item = generate_pro_con_item(
+            title="Decision",
+            pros=["One pro"],
+            cons=["One con"]
+        )
+
+        assert len(item.props["pros"]) == 1
+        assert len(item.props["cons"]) == 1
+
+    def test_pro_con_item_max_items(self):
+        """Test pros/cons with maximum items (10 each)."""
+        pros = [f"Pro {i}" for i in range(1, 11)]
+        cons = [f"Con {i}" for i in range(1, 11)]
+
+        item = generate_pro_con_item(
+            title="Detailed Analysis",
+            pros=pros,
+            cons=cons
+        )
+
+        assert len(item.props["pros"]) == 10
+        assert len(item.props["cons"]) == 10
+
+    def test_pro_con_item_realistic_analysis(self):
+        """Test pros/cons with realistic content."""
+        item = generate_pro_con_item(
+            title="GraphQL vs REST",
+            pros=[
+                "Flexible queries",
+                "Single endpoint",
+                "Strong typing",
+                "No over-fetching"
+            ],
+            cons=[
+                "Steeper learning curve",
+                "Query complexity",
+                "Caching challenges"
+            ],
+            verdict="Choose GraphQL for complex data requirements"
+        )
+
+        assert item.props["title"] == "GraphQL vs REST"
+        assert len(item.props["pros"]) == 4
+        assert len(item.props["cons"]) == 3
+        assert "verdict" in item.props
+
+    def test_pro_con_item_unbalanced_lists(self):
+        """Test pros/cons with different lengths (valid scenario)."""
+        item = generate_pro_con_item(
+            title="Product X",
+            pros=["Great feature 1", "Great feature 2", "Great feature 3"],
+            cons=["Minor issue"]
+        )
+
+        assert len(item.props["pros"]) == 3
+        assert len(item.props["cons"]) == 1
+
+    def test_pro_con_item_empty_title(self):
+        """Test that empty title raises error."""
+        with pytest.raises(ValueError, match="title cannot be empty"):
+            generate_pro_con_item(title="", pros=["Pro"], cons=["Con"])
+
+        with pytest.raises(ValueError, match="title cannot be empty"):
+            generate_pro_con_item(title="   ", pros=["Pro"], cons=["Con"])
+
+    def test_pro_con_item_empty_pros(self):
+        """Test that empty pros list raises error."""
+        with pytest.raises(ValueError, match="requires at least one pro"):
+            generate_pro_con_item(title="Test", pros=[], cons=["Con"])
+
+    def test_pro_con_item_empty_cons(self):
+        """Test that empty cons list raises error."""
+        with pytest.raises(ValueError, match="requires at least one con"):
+            generate_pro_con_item(title="Test", pros=["Pro"], cons=[])
+
+    def test_pro_con_item_too_many_pros(self):
+        """Test that exceeding 10 pros raises error."""
+        pros = [f"Pro {i}" for i in range(1, 12)]
+        with pytest.raises(ValueError, match="supports up to 10 pros"):
+            generate_pro_con_item(title="Test", pros=pros, cons=["Con"])
+
+    def test_pro_con_item_too_many_cons(self):
+        """Test that exceeding 10 cons raises error."""
+        cons = [f"Con {i}" for i in range(1, 12)]
+        with pytest.raises(ValueError, match="supports up to 10 cons"):
+            generate_pro_con_item(title="Test", pros=["Pro"], cons=cons)
+
+    def test_pro_con_item_json_serialization(self):
+        """Test that pro/con item can be serialized to JSON."""
+        item = generate_pro_con_item(
+            title="Test Decision",
+            pros=["Pro 1", "Pro 2"],
+            cons=["Con 1", "Con 2"],
+            verdict="Test verdict"
+        )
+
+        json_str = json.dumps(item.model_dump(exclude_none=True))
+        data = json.loads(json_str)
+
+        assert data["type"] == "a2ui.ProConItem"
+        assert data["props"]["title"] == "Test Decision"
+        assert len(data["props"]["pros"]) == 2
+        assert len(data["props"]["cons"]) == 2
+
+
+class TestBulletPointGenerator:
+    """Test suite for generate_bullet_point function."""
+
+    def test_basic_bullet_point(self):
+        """Test creating a basic bullet point (level 0)."""
+        reset_id_counter()
+        bullet = generate_bullet_point(text="Main point")
+
+        assert bullet.type == "a2ui.BulletPoint"
+        assert bullet.id == "bullet-point-1"
+        assert bullet.props["text"] == "Main point"
+        assert bullet.props["level"] == 0
+        assert bullet.props["highlight"] is False
+        assert "icon" not in bullet.props
+
+    def test_bullet_point_nested_levels(self):
+        """Test bullet points with all nesting levels (0-3)."""
+        reset_id_counter()
+        level0 = generate_bullet_point(text="Root level", level=0)
+        level1 = generate_bullet_point(text="Level 1 nested", level=1)
+        level2 = generate_bullet_point(text="Level 2 nested", level=2)
+        level3 = generate_bullet_point(text="Level 3 nested", level=3)
+
+        assert level0.props["level"] == 0
+        assert level1.props["level"] == 1
+        assert level2.props["level"] == 2
+        assert level3.props["level"] == 3
+
+    def test_bullet_point_with_icon(self):
+        """Test bullet point with custom icon."""
+        bullet = generate_bullet_point(text="Icon bullet", icon="star")
+        assert bullet.props["icon"] == "star"
+
+        bullet2 = generate_bullet_point(text="Arrow bullet", icon="arrow", level=1)
+        assert bullet2.props["icon"] == "arrow"
+
+    def test_bullet_point_highlighted(self):
+        """Test highlighted bullet point."""
+        bullet = generate_bullet_point(
+            text="Important takeaway",
+            highlight=True
+        )
+        assert bullet.props["highlight"] is True
+
+    def test_bullet_point_all_features(self):
+        """Test bullet point with all optional features."""
+        bullet = generate_bullet_point(
+            text="Important nested point",
+            level=2,
+            icon="star",
+            highlight=True
+        )
+
+        assert bullet.props["text"] == "Important nested point"
+        assert bullet.props["level"] == 2
+        assert bullet.props["icon"] == "star"
+        assert bullet.props["highlight"] is True
+
+    def test_bullet_point_various_icons(self):
+        """Test bullet points with different icon types."""
+        icons = ["circle", "square", "arrow", "star", "check"]
+        for icon in icons:
+            bullet = generate_bullet_point(text="Test", icon=icon)
+            assert bullet.props["icon"] == icon
+
+    def test_bullet_point_hierarchical_list(self):
+        """Test creating a hierarchical list structure."""
+        reset_id_counter()
+        bullets = [
+            generate_bullet_point("Main topic 1", level=0),
+            generate_bullet_point("Subtopic 1.1", level=1),
+            generate_bullet_point("Subtopic 1.2", level=1),
+            generate_bullet_point("Detail 1.2.1", level=2),
+            generate_bullet_point("Main topic 2", level=0),
+            generate_bullet_point("Subtopic 2.1", level=1),
+        ]
+
+        assert bullets[0].props["level"] == 0
+        assert bullets[1].props["level"] == 1
+        assert bullets[3].props["level"] == 2
+
+    def test_bullet_point_text_trimming(self):
+        """Test that whitespace in text is trimmed."""
+        bullet = generate_bullet_point(text="  Trimmed text  ")
+        assert bullet.props["text"] == "Trimmed text"
+
+    def test_bullet_point_empty_text(self):
+        """Test that empty text raises error."""
+        with pytest.raises(ValueError, match="text cannot be empty"):
+            generate_bullet_point(text="")
+
+        with pytest.raises(ValueError, match="text cannot be empty"):
+            generate_bullet_point(text="   ")
+
+    def test_bullet_point_invalid_level_negative(self):
+        """Test that negative level raises error."""
+        with pytest.raises(ValueError, match="Level must be between 0 and 3"):
+            generate_bullet_point(text="Test", level=-1)
+
+    def test_bullet_point_invalid_level_too_high(self):
+        """Test that level > 3 raises error."""
+        with pytest.raises(ValueError, match="Level must be between 0 and 3"):
+            generate_bullet_point(text="Test", level=4)
+
+        with pytest.raises(ValueError, match="Level must be between 0 and 3"):
+            generate_bullet_point(text="Test", level=10)
+
+    def test_bullet_point_json_serialization(self):
+        """Test that bullet point can be serialized to JSON."""
+        bullet = generate_bullet_point(
+            text="Test bullet",
+            level=2,
+            icon="arrow",
+            highlight=True
+        )
+
+        json_str = json.dumps(bullet.model_dump(exclude_none=True))
+        data = json.loads(json_str)
+
+        assert data["type"] == "a2ui.BulletPoint"
+        assert data["props"]["text"] == "Test bullet"
+        assert data["props"]["level"] == 2
+
+
+class TestListIntegration:
+    """Integration tests for list components."""
+
+    def test_top_ai_models_ranking(self):
+        """Test creating a complete top AI models ranking."""
+        reset_id_counter()
+        rankings = [
+            generate_ranked_item(
+                rank=1,
+                title="GPT-4",
+                description="Most advanced language model",
+                score=9.5,
+                icon="trophy"
+            ),
+            generate_ranked_item(
+                rank=2,
+                title="Claude 3",
+                description="Strong reasoning capabilities",
+                score=9.3,
+                icon="medal"
+            ),
+            generate_ranked_item(
+                rank=3,
+                title="Gemini Pro",
+                description="Multimodal capabilities",
+                score=9.0,
+                icon="medal"
+            ),
+            generate_ranked_item(
+                rank=4,
+                title="LLaMA 2",
+                description="Open source leader",
+                score=8.5
+            ),
+            generate_ranked_item(
+                rank=5,
+                title="Mistral",
+                description="Efficient and powerful",
+                score=8.2
+            ),
+        ]
+
+        # Verify all components are correct type
+        for item in rankings:
+            assert item.type == "a2ui.RankedItem"
+
+        # Verify rankings are sequential
+        for i, item in enumerate(rankings, 1):
+            assert item.props["rank"] == i
+
+        # Verify top 3 have icons
+        assert rankings[0].props["icon"] == "trophy"
+        assert rankings[1].props["icon"] == "medal"
+        assert rankings[2].props["icon"] == "medal"
+
+    def test_project_checklist(self):
+        """Test creating a complete project checklist."""
+        reset_id_counter()
+        checklist = [
+            generate_checklist_item(
+                text="Set up development environment",
+                checked=True,
+                priority="high"
+            ),
+            generate_checklist_item(
+                text="Design database schema",
+                checked=True,
+                priority="high"
+            ),
+            generate_checklist_item(
+                text="Implement authentication",
+                checked=False,
+                priority="high",
+                due_date="2026-02-05"
+            ),
+            generate_checklist_item(
+                text="Write API documentation",
+                checked=False,
+                priority="medium",
+                due_date="2026-02-10"
+            ),
+            generate_checklist_item(
+                text="Add code comments",
+                checked=False,
+                priority="low",
+                due_date="2026-02-15"
+            ),
+        ]
+
+        # Verify all components
+        for item in checklist:
+            assert item.type == "a2ui.ChecklistItem"
+
+        # Verify completed items
+        assert checklist[0].props["checked"] is True
+        assert checklist[1].props["checked"] is True
+
+        # Verify pending high priority items
+        assert checklist[2].props["checked"] is False
+        assert checklist[2].props["priority"] == "high"
+
+    def test_product_decision_analysis(self):
+        """Test creating a product decision with pros/cons."""
+        reset_id_counter()
+        analysis = generate_pro_con_item(
+            title="Should we adopt GraphQL?",
+            pros=[
+                "Flexible data fetching reduces over-fetching",
+                "Single endpoint simplifies API management",
+                "Strong typing improves developer experience",
+                "Built-in introspection and documentation",
+                "Reduces number of API calls needed"
+            ],
+            cons=[
+                "Steeper learning curve for team",
+                "Query complexity can impact performance",
+                "Caching is more complex than REST",
+                "Requires new tooling and infrastructure",
+            ],
+            verdict="Recommended for new projects with complex data requirements. Consider gradual adoption for existing systems."
+        )
+
+        assert analysis.type == "a2ui.ProConItem"
+        assert len(analysis.props["pros"]) == 5
+        assert len(analysis.props["cons"]) == 4
+        assert "verdict" in analysis.props
+
+    def test_hierarchical_outline(self):
+        """Test creating a hierarchical outline with bullets."""
+        reset_id_counter()
+        outline = [
+            generate_bullet_point("Introduction", level=0, highlight=True),
+            generate_bullet_point("Problem statement", level=1),
+            generate_bullet_point("Current challenges", level=2),
+            generate_bullet_point("Market opportunity", level=2),
+            generate_bullet_point("Proposed solution", level=1),
+
+            generate_bullet_point("Technical Architecture", level=0, highlight=True),
+            generate_bullet_point("Frontend layer", level=1),
+            generate_bullet_point("React components", level=2),
+            generate_bullet_point("State management", level=2),
+            generate_bullet_point("Backend layer", level=1),
+            generate_bullet_point("API design", level=2),
+            generate_bullet_point("Database schema", level=2),
+
+            generate_bullet_point("Implementation Plan", level=0, highlight=True),
+            generate_bullet_point("Phase 1: MVP", level=1),
+            generate_bullet_point("Core features", level=2),
+            generate_bullet_point("Basic UI", level=2),
+            generate_bullet_point("Phase 2: Enhancement", level=1),
+        ]
+
+        # Verify structure
+        assert len(outline) == 17
+
+        # Verify level 0 items are highlighted
+        level_0_items = [b for b in outline if b.props["level"] == 0]
+        for item in level_0_items:
+            assert item.props["highlight"] is True
+
+        # Verify nesting levels are valid (0-3)
+        for item in outline:
+            assert 0 <= item.props["level"] <= 3
+
+    def test_mixed_list_components(self):
+        """Test combining multiple list component types."""
+        reset_id_counter()
+
+        # Create a ranked list
+        top_frameworks = [
+            generate_ranked_item(rank=1, title="React", score=9.2),
+            generate_ranked_item(rank=2, title="Vue", score=8.8),
+            generate_ranked_item(rank=3, title="Angular", score=8.5),
+        ]
+
+        # Create a pros/cons analysis
+        react_analysis = generate_pro_con_item(
+            title="React Framework",
+            pros=["Large ecosystem", "Component reusability", "Strong community"],
+            cons=["Learning curve", "Frequent updates"],
+            verdict="Best for large-scale applications"
+        )
+
+        # Create a checklist
+        learning_checklist = [
+            generate_checklist_item("Learn JSX syntax", checked=True),
+            generate_checklist_item("Understand hooks", checked=False, priority="high"),
+            generate_checklist_item("Practice with projects", checked=False),
+        ]
+
+        # Create outline
+        outline = [
+            generate_bullet_point("Getting Started", level=0),
+            generate_bullet_point("Install dependencies", level=1),
+            generate_bullet_point("Create first component", level=1),
+        ]
+
+        # Verify all components
+        assert len(top_frameworks) == 3
+        assert react_analysis.type == "a2ui.ProConItem"
+        assert len(learning_checklist) == 3
+        assert len(outline) == 3
+
+    def test_list_json_serialization_batch(self):
+        """Test batch JSON serialization of list components."""
+        reset_id_counter()
+
+        components = [
+            generate_ranked_item(rank=1, title="First"),
+            generate_checklist_item(text="Task 1", checked=True),
+            generate_pro_con_item(title="Decision", pros=["Pro"], cons=["Con"]),
+            generate_bullet_point(text="Point 1", level=0),
+        ]
+
+        # Serialize all to JSON
+        json_data = [json.loads(json.dumps(c.model_dump(exclude_none=True))) for c in components]
+
+        assert len(json_data) == 4
+        assert json_data[0]["type"] == "a2ui.RankedItem"
+        assert json_data[1]["type"] == "a2ui.ChecklistItem"
+        assert json_data[2]["type"] == "a2ui.ProConItem"
+        assert json_data[3]["type"] == "a2ui.BulletPoint"

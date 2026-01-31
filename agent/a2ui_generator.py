@@ -1509,6 +1509,378 @@ def generate_mini_chart(
     return generate_component("a2ui.MiniChart", props)
 
 
+# List Component Generators
+
+def generate_ranked_item(
+    rank: int,
+    title: str,
+    description: str | None = None,
+    score: float | None = None,
+    score_max: float = 10,
+    icon: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a RankedItem A2UI component for ranked list items.
+
+    Creates a ranked item component for displaying items in a ranked list,
+    leaderboard, or top-N list. Supports highlighting for top items (rank 1-3).
+
+    Args:
+        rank: Item rank (integer >= 1, e.g., 1 for #1, 2 for #2)
+        title: Item title/name (e.g., "GPT-4", "Tesla Model 3")
+        description: Optional item description or details
+        score: Optional numeric score (0 to score_max)
+        score_max: Maximum score value (default: 10)
+        icon: Optional icon identifier (e.g., "trophy", "star")
+
+    Returns:
+        A2UIComponent configured as RankedItem
+
+    Raises:
+        ValueError: If rank is less than 1
+        ValueError: If score is negative or exceeds score_max
+        ValueError: If score_max is not positive
+
+    Examples:
+        >>> # Basic ranked item
+        >>> item = generate_ranked_item(
+        ...     rank=1,
+        ...     title="GPT-4"
+        ... )
+
+        >>> # Ranked item with all features (top item with trophy)
+        >>> item = generate_ranked_item(
+        ...     rank=1,
+        ...     title="Tesla Model 3",
+        ...     description="Best-selling electric vehicle worldwide",
+        ...     score=9.5,
+        ...     score_max=10,
+        ...     icon="trophy"
+        ... )
+
+        >>> # Mid-ranked item with score
+        >>> item = generate_ranked_item(
+        ...     rank=5,
+        ...     title="Product X",
+        ...     description="Solid performer in category",
+        ...     score=7.8,
+        ...     score_max=10
+        ... )
+    """
+    # Validate rank
+    if rank < 1:
+        raise ValueError(f"Rank must be >= 1, got: {rank}")
+
+    # Validate score_max
+    if score_max <= 0:
+        raise ValueError(f"score_max must be positive, got: {score_max}")
+
+    # Validate score if provided
+    if score is not None:
+        if score < 0:
+            raise ValueError(f"Score cannot be negative, got: {score}")
+        if score > score_max:
+            raise ValueError(
+                f"Score ({score}) cannot exceed score_max ({score_max})"
+            )
+
+    props = {
+        "rank": rank,
+        "title": title,
+        "scoreMax": score_max,
+    }
+
+    # Add optional fields
+    if description:
+        props["description"] = description
+
+    if score is not None:
+        props["score"] = score
+
+    if icon:
+        props["icon"] = icon
+
+    return generate_component("a2ui.RankedItem", props)
+
+
+def generate_checklist_item(
+    text: str,
+    checked: bool = False,
+    priority: str | None = None,
+    due_date: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a ChecklistItem A2UI component for to-do lists and checklists.
+
+    Creates a checklist item with checkbox state, optional priority,
+    and due date. Useful for task lists, to-do lists, and checklists.
+
+    Args:
+        text: Checklist item text/description
+        checked: Whether the item is checked/complete (default: False)
+        priority: Optional priority level - "high", "medium", or "low"
+        due_date: Optional due date (YYYY-MM-DD format recommended)
+
+    Returns:
+        A2UIComponent configured as ChecklistItem
+
+    Raises:
+        ValueError: If text is empty
+        ValueError: If priority is not "high", "medium", or "low"
+
+    Examples:
+        >>> # Basic unchecked item
+        >>> item = generate_checklist_item(
+        ...     text="Complete project proposal"
+        ... )
+
+        >>> # Checked item with priority
+        >>> item = generate_checklist_item(
+        ...     text="Review PR #123",
+        ...     checked=True,
+        ...     priority="high"
+        ... )
+
+        >>> # High priority item with due date
+        >>> item = generate_checklist_item(
+        ...     text="Submit quarterly report",
+        ...     checked=False,
+        ...     priority="high",
+        ...     due_date="2026-02-15"
+        ... )
+
+        >>> # Low priority completed item
+        >>> item = generate_checklist_item(
+        ...     text="Update documentation",
+        ...     checked=True,
+        ...     priority="low",
+        ...     due_date="2026-01-30"
+        ... )
+    """
+    # Validate text
+    if not text or not text.strip():
+        raise ValueError("ChecklistItem text cannot be empty")
+
+    # Validate priority if provided
+    if priority:
+        valid_priorities = {"high", "medium", "low"}
+        if priority not in valid_priorities:
+            raise ValueError(
+                f"Invalid priority: {priority}. "
+                f"Must be one of: {', '.join(valid_priorities)}"
+            )
+
+    props = {
+        "text": text.strip(),
+        "checked": checked,
+    }
+
+    # Add optional fields
+    if priority:
+        props["priority"] = priority
+
+    if due_date:
+        props["dueDate"] = due_date
+
+    return generate_component("a2ui.ChecklistItem", props)
+
+
+def generate_pro_con_item(
+    title: str,
+    pros: list[str],
+    cons: list[str],
+    verdict: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a ProConItem A2UI component for pros/cons analysis.
+
+    Creates a pros and cons comparison component for decision analysis,
+    product evaluations, or comparative assessments. Supports visual
+    separation of pros and cons with optional verdict/recommendation.
+
+    Args:
+        title: Item/topic title (e.g., "Remote Work", "Product X")
+        pros: List of pros/advantages (1-10 items)
+        cons: List of cons/disadvantages (1-10 items)
+        verdict: Optional verdict/recommendation text
+
+    Returns:
+        A2UIComponent configured as ProConItem
+
+    Raises:
+        ValueError: If title is empty
+        ValueError: If pros or cons list is empty
+        ValueError: If pros or cons list exceeds 10 items
+
+    Examples:
+        >>> # Basic pros/cons analysis
+        >>> item = generate_pro_con_item(
+        ...     title="Remote Work",
+        ...     pros=[
+        ...         "Flexible schedule",
+        ...         "No commute time",
+        ...         "Better work-life balance"
+        ...     ],
+        ...     cons=[
+        ...         "Less face-to-face interaction",
+        ...         "Potential isolation",
+        ...         "Harder to separate work/home"
+        ...     ]
+        ... )
+
+        >>> # Product comparison with verdict
+        >>> item = generate_pro_con_item(
+        ...     title="Electric Vehicle vs Gas Car",
+        ...     pros=[
+        ...         "Lower running costs",
+        ...         "Environmentally friendly",
+        ...         "Quiet operation",
+        ...         "Lower maintenance"
+        ...     ],
+        ...     cons=[
+        ...         "Higher upfront cost",
+        ...         "Limited charging infrastructure",
+        ...         "Range anxiety"
+        ...     ],
+        ...     verdict="Best for urban commuters with home charging"
+        ... )
+
+        >>> # Technology evaluation
+        >>> item = generate_pro_con_item(
+        ...     title="GraphQL vs REST",
+        ...     pros=[
+        ...         "Flexible queries",
+        ...         "Single endpoint",
+        ...         "Strong typing"
+        ...     ],
+        ...     cons=[
+        ...         "Steeper learning curve",
+        ...         "Query complexity",
+        ...         "Caching challenges"
+        ...     ],
+        ...     verdict="Choose GraphQL for complex data requirements"
+        ... )
+    """
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("ProConItem title cannot be empty")
+
+    # Validate pros list
+    if not pros:
+        raise ValueError("ProConItem requires at least one pro")
+
+    if len(pros) > 10:
+        raise ValueError(
+            f"ProConItem supports up to 10 pros, got {len(pros)}. "
+            "Consider summarizing or grouping similar points."
+        )
+
+    # Validate cons list
+    if not cons:
+        raise ValueError("ProConItem requires at least one con")
+
+    if len(cons) > 10:
+        raise ValueError(
+            f"ProConItem supports up to 10 cons, got {len(cons)}. "
+            "Consider summarizing or grouping similar points."
+        )
+
+    props = {
+        "title": title.strip(),
+        "pros": pros,
+        "cons": cons,
+    }
+
+    # Add optional verdict
+    if verdict:
+        props["verdict"] = verdict
+
+    return generate_component("a2ui.ProConItem", props)
+
+
+def generate_bullet_point(
+    text: str,
+    level: int = 0,
+    icon: str | None = None,
+    highlight: bool = False
+) -> A2UIComponent:
+    """
+    Generate a BulletPoint A2UI component for bulleted lists.
+
+    Creates a bullet point component supporting hierarchical nested lists
+    with customizable icons and highlighting. Useful for structured content,
+    outlines, and nested information.
+
+    Args:
+        text: Bullet point text content
+        level: Nesting level (0-3, where 0 is root, 1-3 are nested)
+        icon: Optional icon identifier (e.g., "circle", "square", "arrow")
+        highlight: Whether to highlight this bullet point (default: False)
+
+    Returns:
+        A2UIComponent configured as BulletPoint
+
+    Raises:
+        ValueError: If text is empty
+        ValueError: If level is not between 0 and 3
+
+    Examples:
+        >>> # Basic root bullet point
+        >>> bullet = generate_bullet_point(
+        ...     text="Main point"
+        ... )
+
+        >>> # Level 1 nested bullet
+        >>> bullet = generate_bullet_point(
+        ...     text="Sub-point under main item",
+        ...     level=1
+        ... )
+
+        >>> # Highlighted bullet with custom icon
+        >>> bullet = generate_bullet_point(
+        ...     text="Important takeaway",
+        ...     level=0,
+        ...     icon="star",
+        ...     highlight=True
+        ... )
+
+        >>> # Deep nested bullet (level 3)
+        >>> bullet = generate_bullet_point(
+        ...     text="Detailed sub-sub-sub point",
+        ...     level=3,
+        ...     icon="circle"
+        ... )
+
+        >>> # Level 2 bullet with arrow icon
+        >>> bullet = generate_bullet_point(
+        ...     text="Action item",
+        ...     level=2,
+        ...     icon="arrow"
+        ... )
+    """
+    # Validate text
+    if not text or not text.strip():
+        raise ValueError("BulletPoint text cannot be empty")
+
+    # Validate level
+    if level < 0 or level > 3:
+        raise ValueError(
+            f"Level must be between 0 and 3 (inclusive), got: {level}"
+        )
+
+    props = {
+        "text": text.strip(),
+        "level": level,
+        "highlight": highlight,
+    }
+
+    # Add optional icon
+    if icon:
+        props["icon"] = icon
+
+    return generate_component("a2ui.BulletPoint", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -1537,4 +1909,9 @@ __all__ = [
     "generate_comparison_bar",
     "generate_data_table",
     "generate_mini_chart",
+    # List generators
+    "generate_ranked_item",
+    "generate_checklist_item",
+    "generate_pro_con_item",
+    "generate_bullet_point",
 ]
