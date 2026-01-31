@@ -54,17 +54,17 @@ export function StatCard({
   };
 
   return (
-    <Card className={`${color ? `border-${color}-500` : ''} ${backgroundColor || ''}`}>
+    <Card className={`${color ? `border-${color}-500` : ''} ${backgroundColor || ''} group cursor-default`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardDescription className="dark:text-slate-400">{label}</CardDescription>
-          {icon && <span className="text-2xl">{icon}</span>}
+          <CardDescription>{label}</CardDescription>
+          {icon && <span className="text-2xl transition-transform duration-200 group-hover:scale-110">{icon}</span>}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold dark:text-slate-100">
+        <div className="text-3xl font-bold">
           {value}
-          {unit && <span className="text-lg text-muted-foreground dark:text-slate-400 ml-1">{unit}</span>}
+          {unit && <span className="text-lg text-muted-foreground ml-1">{unit}</span>}
         </div>
         {trend && (
           <p className={`text-sm mt-1 ${getTrendColor()}`}>

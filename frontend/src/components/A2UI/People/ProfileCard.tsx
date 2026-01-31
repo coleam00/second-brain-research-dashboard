@@ -59,25 +59,27 @@ export function ProfileCard({
   const displayedLinks = social_links?.slice(0, 5) || [];
 
   return (
-    <Card className="dark:border-slate-700">
+    <Card className="group cursor-default">
       <CardHeader>
         <div className="flex items-start gap-4">
           {avatar_url ? (
-            <img
-              src={avatar_url}
-              alt={name}
-              className="w-16 h-16 rounded-full border-2 border-primary dark:border-primary/50"
-            />
+            <div className="overflow-hidden rounded-full border-2 border-primary transition-all duration-300 group-hover:border-primary/80 group-hover:shadow-lg">
+              <img
+                src={avatar_url}
+                alt={name}
+                className="w-16 h-16 object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+            </div>
           ) : (
-            <div className="w-16 h-16 rounded-full border-2 border-primary dark:border-primary/50 bg-muted flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border-2 border-primary bg-muted flex items-center justify-center transition-all duration-300 group-hover:border-primary/80 group-hover:shadow-lg">
               <span className="text-2xl font-bold text-muted-foreground">
                 {name.charAt(0).toUpperCase()}
               </span>
             </div>
           )}
           <div className="flex-1">
-            <CardTitle className="text-base dark:text-slate-50">{name}</CardTitle>
-            <CardDescription className="dark:text-slate-400">
+            <CardTitle className="text-base">{name}</CardTitle>
+            <CardDescription>
               {title}
               {company && ` at ${company}`}
               {location && ` • ${location}`}
@@ -87,7 +89,7 @@ export function ProfileCard({
       </CardHeader>
       {bio && (
         <CardContent>
-          <p className="text-sm text-muted-foreground dark:text-slate-300">{bio}</p>
+          <p className="text-sm text-muted-foreground">{bio}</p>
         </CardContent>
       )}
       {displayedLinks.length > 0 && (
@@ -98,7 +100,6 @@ export function ProfileCard({
               asChild
               variant="outline"
               size="sm"
-              className="dark:border-slate-600 dark:hover:bg-slate-800"
             >
               <a href={link.url} target="_blank" rel="noopener noreferrer">
                 {link.platform}

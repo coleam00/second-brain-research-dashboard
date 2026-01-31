@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { A2UIComponent } from '@/lib/a2ui-catalog';
 import { getComponentRenderer, isComponentRegistered } from '@/lib/a2ui-catalog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -171,17 +172,45 @@ export function A2UIRendererList({
     lg: 'space-y-6',
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    },
+  };
+
   return (
-    <div className={`${spacingClasses[spacing]} ${className || ''}`}>
+    <motion.div
+      className={`${spacingClasses[spacing]} ${className || ''}`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {components.map((component, index) => (
-        <A2UIRenderer
-          key={component.id || `component-${index}`}
-          component={component}
-          onMissingComponent={onMissingComponent}
-          showErrors={showErrors}
-        />
+        <motion.div key={component.id || `component-${index}`} variants={itemVariants}>
+          <A2UIRenderer
+            component={component}
+            onMissingComponent={onMissingComponent}
+            showErrors={showErrors}
+          />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 

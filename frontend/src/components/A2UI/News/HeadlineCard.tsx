@@ -64,17 +64,19 @@ export function HeadlineCard({
   };
 
   return (
-    <Card className={getBorderColor()}>
+    <Card className={`${getBorderColor()} group cursor-pointer`}>
       {image_url && (
-        <img
-          src={image_url}
-          alt={title}
-          className="w-full h-48 object-cover rounded-t-lg"
-        />
+        <div className="overflow-hidden rounded-t-lg">
+          <img
+            src={image_url}
+            alt={title}
+            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
       )}
       <CardHeader>
         <div className="flex justify-between items-start gap-2">
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-lg group-hover:text-primary transition-colors duration-200">{title}</CardTitle>
           {sentiment && sentiment !== 'neutral' && (
             <Badge variant={getSentimentVariant()} className="shrink-0">
               {sentiment}
