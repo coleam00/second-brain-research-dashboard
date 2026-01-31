@@ -20,6 +20,7 @@ import { StatCard, MetricRow, ProgressRing, ComparisonBar, DataTable, MiniChart 
 import { RankedItem, ChecklistItem, ProConItem, BulletPoint } from "@/components/A2UI/Lists";
 import { LinkCard, ToolCard, BookCard, RepoCard } from "@/components/A2UI/Resources";
 import { ComparisonTable, VsCard, FeatureMatrix, PricingTable } from "@/components/A2UI/Comparison";
+import { StepCard, CodeBlock, CalloutCard, CommandCard } from "@/components/A2UI/Instructional";
 
 /**
  * A2UI Component Specification
@@ -104,97 +105,10 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.PricingTable": (props: any) => <PricingTable {...props} />,
 
   // ===== INSTRUCTIONAL COMPONENTS =====
-  "a2ui.StepCard": ({ step_number, title, description, image_url, tips }: any) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-            {step_number}
-          </div>
-          <CardTitle className="text-base">{title}</CardTitle>
-        </div>
-      </CardHeader>
-      {image_url && (
-        <img src={image_url} alt={title} className="w-full h-48 object-cover" />
-      )}
-      <CardContent className="space-y-2">
-        <p className="text-sm text-muted-foreground">{description}</p>
-        {tips && tips.length > 0 && (
-          <div className="mt-3 p-3 bg-blue-500/10 rounded-lg">
-            <p className="text-xs font-semibold mb-1">Tips:</p>
-            <ul className="space-y-1">
-              {tips.map((tip: string, idx: number) => (
-                <li key={idx} className="text-xs text-muted-foreground">• {tip}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.CodeBlock": ({ code, language, filename }: any) => (
-    <Card>
-      {filename && (
-        <CardHeader className="pb-2">
-          <CardDescription className="font-mono text-xs">{filename}</CardDescription>
-        </CardHeader>
-      )}
-      <CardContent className="p-0">
-        <pre className="p-4 overflow-x-auto bg-muted/50 rounded-b-lg">
-          <code className={`text-sm language-${language || 'text'}`}>{code}</code>
-        </pre>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.CalloutCard": ({ message, type, title, icon }: any) => {
-    const colors = {
-      info: 'bg-blue-500/10 border-blue-500',
-      warning: 'bg-yellow-500/10 border-yellow-500',
-      error: 'bg-red-500/10 border-red-500',
-      success: 'bg-green-500/10 border-green-500',
-    };
-    const icons = {
-      info: 'ℹ️',
-      warning: '⚠️',
-      error: '❌',
-      success: '✅',
-    };
-
-    return (
-      <Card className={colors[type as keyof typeof colors] || colors.info}>
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <span className="text-xl">{icon || icons[type as keyof typeof icons] || icons.info}</span>
-            <div className="flex-1">
-              {title && <div className="font-semibold mb-1">{title}</div>}
-              <p className="text-sm">{message}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  },
-
-  "a2ui.CommandCard": ({ command, description, platform, copy_button }: any) => (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-2">
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
-          <div className="flex items-center gap-2 bg-muted p-3 rounded-lg font-mono text-sm">
-            {platform && <Badge variant="outline" className="text-xs">{platform}</Badge>}
-            <code className="flex-1">{command}</code>
-            {copy_button && (
-              <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(command)}>
-                Copy
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ),
+  "a2ui.StepCard": (props: any) => <StepCard {...props} />,
+  "a2ui.CodeBlock": (props: any) => <CodeBlock {...props} />,
+  "a2ui.CalloutCard": (props: any) => <CalloutCard {...props} />,
+  "a2ui.CommandCard": (props: any) => <CommandCard {...props} />,
 
   // ===== LAYOUT COMPONENTS =====
   "a2ui.Section": ({ title, description }: any, childComponents?: React.ReactNode) => (
