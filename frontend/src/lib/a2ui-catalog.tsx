@@ -16,6 +16,7 @@ import { HeadlineCard, TrendIndicator, TimelineEvent, NewsTicker } from "@/compo
 import { ProfileCard, CompanyCard, QuoteCard, ExpertTip } from "@/components/A2UI/People";
 import { TLDR, KeyTakeaways, ExecutiveSummary, TableOfContents } from "@/components/A2UI/Summary";
 import { VideoCard, ImageCard, PlaylistCard, PodcastCard } from "@/components/A2UI/Media";
+import { StatCard, MetricRow, ProgressRing, ComparisonBar, DataTable, MiniChart } from "@/components/A2UI/Data";
 
 /**
  * A2UI Component Specification
@@ -62,143 +63,12 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.PodcastCard": (props: any) => <PodcastCard {...props} />,
 
   // ===== DATA COMPONENTS =====
-  "a2ui.StatCard": ({ label, value, unit, trend, icon, color }: any) => (
-    <Card className={color ? `border-${color}-500` : ''}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardDescription>{label}</CardDescription>
-          {icon && <span className="text-2xl">{icon}</span>}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold">
-          {value}
-          {unit && <span className="text-lg text-muted-foreground ml-1">{unit}</span>}
-        </div>
-        {trend && (
-          <p className={`text-sm mt-1 ${trend.startsWith('+') ? 'text-green-500' : trend.startsWith('-') ? 'text-red-500' : 'text-muted-foreground'}`}>
-            {trend}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.MetricRow": ({ label, value, previous_value, unit, change_percentage }: any) => (
-    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-      <span className="text-sm font-medium">{label}</span>
-      <div className="flex items-center gap-3">
-        {previous_value && (
-          <span className="text-xs text-muted-foreground line-through">{previous_value}{unit}</span>
-        )}
-        <span className="text-lg font-bold">{value}{unit}</span>
-        {change_percentage && (
-          <Badge variant={change_percentage > 0 ? 'default' : 'destructive'}>
-            {change_percentage > 0 ? '+' : ''}{change_percentage}%
-          </Badge>
-        )}
-      </div>
-    </div>
-  ),
-
-  "a2ui.ProgressRing": ({ label, percentage, color, size }: any) => (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative" style={{ width: size || 100, height: size || 100 }}>
-        <svg className="transform -rotate-90" width="100%" height="100%" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            className={color ? `text-${color}-500` : 'text-primary'}
-            strokeDasharray={`${2 * Math.PI * 45}`}
-            strokeDashoffset={`${2 * Math.PI * 45 * (1 - percentage / 100)}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold">{percentage}%</span>
-        </div>
-      </div>
-      {label && <span className="text-sm text-muted-foreground">{label}</span>}
-    </div>
-  ),
-
-  "a2ui.ComparisonBar": ({ label, value_a, value_b, label_a, label_b, max_value }: any) => {
-    const maxVal = max_value || Math.max(value_a, value_b);
-    const percentA = (value_a / maxVal) * 100;
-    const percentB = (value_b / maxVal) * 100;
-
-    return (
-      <div className="space-y-2">
-        <div className="text-sm font-medium">{label}</div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs w-20 text-right text-muted-foreground">{label_a}</span>
-          <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
-            <div className="bg-blue-500 h-full transition-all" style={{ width: `${percentA}%` }} />
-          </div>
-          <span className="text-xs w-12 font-semibold">{value_a}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs w-20 text-right text-muted-foreground">{label_b}</span>
-          <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
-            <div className="bg-purple-500 h-full transition-all" style={{ width: `${percentB}%` }} />
-          </div>
-          <span className="text-xs w-12 font-semibold">{value_b}</span>
-        </div>
-      </div>
-    );
-  },
-
-  "a2ui.DataTable": ({ headers, rows, caption }: any) => (
-    <Card>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            {caption && <caption className="p-4 text-sm text-muted-foreground">{caption}</caption>}
-            <thead className="border-b">
-              <tr>
-                {headers?.map((header: string, idx: number) => (
-                  <th key={idx} className="px-4 py-3 text-left text-sm font-semibold">{header}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows?.map((row: any[], rowIdx: number) => (
-                <tr key={rowIdx} className="border-b last:border-0 hover:bg-muted/50">
-                  {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className="px-4 py-3 text-sm">{cell}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  ),
-
-  "a2ui.MiniChart": ({ data, label, color }: any) => (
-    <div className="space-y-1">
-      {label && <div className="text-xs text-muted-foreground">{label}</div>}
-      <div className="flex items-end gap-1 h-12">
-        {data?.map((value: number, idx: number) => {
-          const maxValue = Math.max(...data);
-          const height = (value / maxValue) * 100;
-          return (
-            <div
-              key={idx}
-              className={`flex-1 ${color ? `bg-${color}-500` : 'bg-primary'} rounded-t`}
-              style={{ height: `${height}%` }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  ),
+  "a2ui.StatCard": (props: any) => <StatCard {...props} />,
+  "a2ui.MetricRow": (props: any) => <MetricRow {...props} />,
+  "a2ui.ProgressRing": (props: any) => <ProgressRing {...props} />,
+  "a2ui.ComparisonBar": (props: any) => <ComparisonBar {...props} />,
+  "a2ui.DataTable": (props: any) => <DataTable {...props} />,
+  "a2ui.MiniChart": (props: any) => <MiniChart {...props} />,
 
   // ===== LIST COMPONENTS =====
   "a2ui.RankedItem": ({ rank, title, description, score, badge }: any) => (

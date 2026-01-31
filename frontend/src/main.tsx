@@ -8,8 +8,10 @@ import NewsComponentsTestPage from './pages/NewsComponentsTestPage.tsx'
 import TestPeopleComponents from './pages/TestPeopleComponents.tsx'
 import SummaryComponentsTestPage from './pages/SummaryComponentsTestPage.tsx'
 import MediaComponentsTest from './pages/MediaComponentsTest.tsx'
+import DataComponentsTest from './pages/DataComponentsTest.tsx'
 
 // Use test pages based on query params (check specific tests first to avoid conflicts)
+const USE_DATA_TEST_PAGE = window.location.search.includes('data-test');
 const USE_MEDIA_TEST_PAGE = window.location.search.includes('media-test');
 const USE_SUMMARY_TEST_PAGE = window.location.search.includes('summary-test');
 const USE_PEOPLE_TEST_PAGE = window.location.search.includes('people-test');
@@ -26,7 +28,9 @@ console.log('Initializing CopilotKit with backend:', COPILOT_CONFIG.runtimeUrl)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {USE_MEDIA_TEST_PAGE ? (
+    {USE_DATA_TEST_PAGE ? (
+      <DataComponentsTest />
+    ) : USE_MEDIA_TEST_PAGE ? (
       <MediaComponentsTest />
     ) : USE_SUMMARY_TEST_PAGE ? (
       <SummaryComponentsTestPage />
