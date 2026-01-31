@@ -2416,6 +2416,394 @@ def generate_repo_card(
     return generate_component("a2ui.RepoCard", props)
 
 
+# People Component Generators
+
+def generate_profile_card(
+    name: str,
+    title: str,
+    bio: str | None = None,
+    avatar_url: str | None = None,
+    contact: dict[str, str] | None = None,
+    social_links: list[dict[str, str]] | None = None
+) -> A2UIComponent:
+    """
+    Generate a ProfileCard A2UI component for person profiles.
+
+    Creates a profile card component for team bios, expert profiles, and author cards.
+    Supports contact information and social media links.
+
+    Args:
+        name: Person's full name (e.g., "Jane Smith", "Dr. John Doe")
+        title: Person's title/role (e.g., "Senior Engineer", "CEO", "AI Researcher")
+        bio: Optional short biography or description
+        avatar_url: Optional URL to avatar/profile image
+        contact: Optional contact information dict with keys:
+                 - "email": Email address (validated)
+                 - "phone": Phone number
+                 - "location": Location/city
+        social_links: Optional list of social media links (max 5), each with:
+                     - "platform": Platform name (twitter, linkedin, github, website, etc.)
+                     - "url": Profile URL
+
+    Returns:
+        A2UIComponent configured as ProfileCard
+
+    Raises:
+        ValueError: If name or title is empty
+        ValueError: If email format is invalid
+        ValueError: If social_links exceeds 5 items
+        ValueError: If social_links items don't have required keys
+
+    Examples:
+        >>> # Basic profile card
+        >>> card = generate_profile_card(
+        ...     name="Jane Smith",
+        ...     title="AI Researcher"
+        ... )
+
+        >>> # Profile card with all features
+        >>> card = generate_profile_card(
+        ...     name="Dr. John Doe",
+        ...     title="Chief Technology Officer",
+        ...     bio="20+ years building scalable systems",
+        ...     avatar_url="https://example.com/avatar.jpg",
+        ...     contact={
+        ...         "email": "john@example.com",
+        ...         "phone": "+1-555-0100",
+        ...         "location": "San Francisco, CA"
+        ...     },
+        ...     social_links=[
+        ...         {"platform": "twitter", "url": "https://twitter.com/johndoe"},
+        ...         {"platform": "linkedin", "url": "https://linkedin.com/in/johndoe"},
+        ...         {"platform": "github", "url": "https://github.com/johndoe"}
+        ...     ]
+        ... )
+    """
+    # Validate name
+    if not name or not name.strip():
+        raise ValueError("ProfileCard name cannot be empty")
+
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("ProfileCard title cannot be empty")
+
+    # Validate email format if provided in contact
+    if contact and "email" in contact:
+        email = contact["email"]
+        # Basic email validation
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            raise ValueError(f"Invalid email format: {email}")
+
+    # Validate social_links
+    if social_links:
+        if len(social_links) > 5:
+            raise ValueError(
+                f"ProfileCard supports up to 5 social links, got {len(social_links)}. "
+                "Consider using only the most important platforms."
+            )
+
+        # Validate that all social_links have required keys
+        for i, link in enumerate(social_links):
+            if "platform" not in link:
+                raise ValueError(f"Social link {i} missing required key: 'platform'")
+            if "url" not in link:
+                raise ValueError(f"Social link {i} missing required key: 'url'")
+
+    props = {
+        "name": name.strip(),
+        "title": title.strip(),
+    }
+
+    # Add optional fields
+    if bio:
+        props["bio"] = bio
+
+    if avatar_url:
+        props["avatarUrl"] = avatar_url
+
+    if contact:
+        props["contact"] = contact
+
+    if social_links:
+        props["socialLinks"] = social_links
+
+    return generate_component("a2ui.ProfileCard", props)
+
+
+def generate_company_card(
+    name: str,
+    description: str,
+    logo_url: str | None = None,
+    website: str | None = None,
+    headquarters: str | None = None,
+    founded_year: int | None = None,
+    employee_count: str | None = None,
+    industries: list[str] | None = None
+) -> A2UIComponent:
+    """
+    Generate a CompanyCard A2UI component for company profiles.
+
+    Creates a company card component for company information, partner profiles,
+    and vendor cards. Supports company metadata and industry categorization.
+
+    Args:
+        name: Company name (e.g., "Acme Corp", "TechStart Inc.")
+        description: Company description/summary
+        logo_url: Optional URL to company logo
+        website: Optional company website URL (validated)
+        headquarters: Optional headquarters location (e.g., "San Francisco, CA")
+        founded_year: Optional founding year (validated 1800-current year)
+        employee_count: Optional employee count range (e.g., "100-500", "1000+")
+        industries: Optional list of industries/sectors (max 5)
+
+    Returns:
+        A2UIComponent configured as CompanyCard
+
+    Raises:
+        ValueError: If name or description is empty
+        ValueError: If website URL format is invalid
+        ValueError: If founded_year is not between 1800 and current year
+        ValueError: If industries list exceeds 5 items
+
+    Examples:
+        >>> # Basic company card
+        >>> card = generate_company_card(
+        ...     name="Acme Corp",
+        ...     description="Leading provider of innovative solutions"
+        ... )
+
+        >>> # Company card with all features
+        >>> card = generate_company_card(
+        ...     name="TechStart Inc.",
+        ...     description="AI-powered analytics platform",
+        ...     logo_url="https://example.com/logo.png",
+        ...     website="https://techstart.com",
+        ...     headquarters="San Francisco, CA",
+        ...     founded_year=2015,
+        ...     employee_count="100-500",
+        ...     industries=["Technology", "Artificial Intelligence", "Analytics"]
+        ... )
+    """
+    from datetime import datetime
+
+    # Validate name
+    if not name or not name.strip():
+        raise ValueError("CompanyCard name cannot be empty")
+
+    # Validate description
+    if not description or not description.strip():
+        raise ValueError("CompanyCard description cannot be empty")
+
+    # Validate website URL format if provided
+    if website:
+        if not website.startswith(("http://", "https://")):
+            raise ValueError(f"Website URL must start with http:// or https://, got: {website}")
+
+    # Validate founded_year if provided
+    if founded_year is not None:
+        current_year = datetime.now().year
+        if founded_year < 1800 or founded_year > current_year:
+            raise ValueError(
+                f"Founded year must be between 1800 and {current_year}, got: {founded_year}"
+            )
+
+    # Validate industries
+    if industries:
+        if len(industries) > 5:
+            raise ValueError(
+                f"CompanyCard supports up to 5 industries, got {len(industries)}. "
+                "Consider using only the most relevant industries."
+            )
+
+    props = {
+        "name": name.strip(),
+        "description": description.strip(),
+    }
+
+    # Add optional fields
+    if logo_url:
+        props["logoUrl"] = logo_url
+
+    if website:
+        props["website"] = website
+
+    if headquarters:
+        props["headquarters"] = headquarters
+
+    if founded_year is not None:
+        props["foundedYear"] = founded_year
+
+    if employee_count:
+        props["employeeCount"] = employee_count
+
+    if industries:
+        props["industries"] = industries
+
+    return generate_component("a2ui.CompanyCard", props)
+
+
+def generate_quote_card(
+    text: str,
+    author: str,
+    source: str | None = None,
+    highlight: bool = False
+) -> A2UIComponent:
+    """
+    Generate a QuoteCard A2UI component for quotes and testimonials.
+
+    Creates a quote card component for testimonials, famous quotes, and
+    inspirational content. Supports highlighting for featured quotes.
+
+    Args:
+        text: Quote text/content (up to 500 characters)
+        author: Person who said/wrote the quote
+        source: Optional source (book, article, speech, etc.)
+        highlight: Whether to highlight as featured quote (default: False)
+
+    Returns:
+        A2UIComponent configured as QuoteCard
+
+    Raises:
+        ValueError: If text is empty
+        ValueError: If text exceeds 500 characters
+        ValueError: If author is empty
+
+    Examples:
+        >>> # Basic quote card
+        >>> card = generate_quote_card(
+        ...     text="The best way to predict the future is to invent it.",
+        ...     author="Alan Kay"
+        ... )
+
+        >>> # Quote card with all features
+        >>> card = generate_quote_card(
+        ...     text="Stay hungry, stay foolish.",
+        ...     author="Steve Jobs",
+        ...     source="Stanford Commencement Speech, 2005",
+        ...     highlight=True
+        ... )
+
+        >>> # Testimonial quote
+        >>> card = generate_quote_card(
+        ...     text="This product changed how we work. Highly recommended!",
+        ...     author="Jane Smith",
+        ...     source="TechCrunch Review"
+        ... )
+    """
+    # Validate text
+    if not text or not text.strip():
+        raise ValueError("QuoteCard text cannot be empty")
+
+    # Validate text length
+    if len(text.strip()) > 500:
+        raise ValueError(
+            f"QuoteCard text must be 500 characters or less, got {len(text.strip())} characters"
+        )
+
+    # Validate author
+    if not author or not author.strip():
+        raise ValueError("QuoteCard author cannot be empty")
+
+    props = {
+        "text": text.strip(),
+        "author": author.strip(),
+        "highlight": highlight,
+    }
+
+    # Add optional source
+    if source:
+        props["source"] = source
+
+    return generate_component("a2ui.QuoteCard", props)
+
+
+def generate_expert_tip(
+    title: str,
+    content: str,
+    expert_name: str | None = None,
+    difficulty: str | None = None,
+    category: str | None = None
+) -> A2UIComponent:
+    """
+    Generate an ExpertTip A2UI component for expert advice and tips.
+
+    Creates an expert tip component for tips, advice, best practices, and tutorials.
+    Supports difficulty levels and categorization.
+
+    Args:
+        title: Tip title/heading
+        content: Tip content/description
+        expert_name: Optional name of the expert providing the tip
+        difficulty: Optional difficulty level - "beginner", "intermediate", or "advanced"
+        category: Optional category (e.g., "development", "design", "productivity")
+
+    Returns:
+        A2UIComponent configured as ExpertTip
+
+    Raises:
+        ValueError: If title or content is empty
+        ValueError: If difficulty is not valid
+
+    Examples:
+        >>> # Basic expert tip
+        >>> tip = generate_expert_tip(
+        ...     title="Use Async/Await",
+        ...     content="Always use async/await instead of callbacks for cleaner code"
+        ... )
+
+        >>> # Expert tip with all features
+        >>> tip = generate_expert_tip(
+        ...     title="Optimize React Performance",
+        ...     content="Use React.memo() to prevent unnecessary re-renders of components",
+        ...     expert_name="Sarah Johnson",
+        ...     difficulty="intermediate",
+        ...     category="development"
+        ... )
+
+        >>> # Beginner tip
+        >>> tip = generate_expert_tip(
+        ...     title="Git Commit Messages",
+        ...     content="Write clear, descriptive commit messages in present tense",
+        ...     expert_name="John Doe",
+        ...     difficulty="beginner",
+        ...     category="productivity"
+        ... )
+    """
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("ExpertTip title cannot be empty")
+
+    # Validate content
+    if not content or not content.strip():
+        raise ValueError("ExpertTip content cannot be empty")
+
+    # Validate difficulty if provided
+    if difficulty:
+        valid_difficulties = {"beginner", "intermediate", "advanced"}
+        if difficulty not in valid_difficulties:
+            raise ValueError(
+                f"Invalid difficulty: {difficulty}. "
+                f"Must be one of: {', '.join(valid_difficulties)}"
+            )
+
+    props = {
+        "title": title.strip(),
+        "content": content.strip(),
+    }
+
+    # Add optional fields
+    if expert_name:
+        props["expertName"] = expert_name
+
+    if difficulty:
+        props["difficulty"] = difficulty
+
+    if category:
+        props["category"] = category
+
+    return generate_component("a2ui.ExpertTip", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -2456,4 +2844,9 @@ __all__ = [
     "generate_tool_card",
     "generate_book_card",
     "generate_repo_card",
+    # People generators
+    "generate_profile_card",
+    "generate_company_card",
+    "generate_quote_card",
+    "generate_expert_tip",
 ]

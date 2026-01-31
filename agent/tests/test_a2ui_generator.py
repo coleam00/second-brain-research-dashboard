@@ -52,6 +52,11 @@ from a2ui_generator import (
     generate_tool_card,
     generate_book_card,
     generate_repo_card,
+    # People generators
+    generate_profile_card,
+    generate_company_card,
+    generate_quote_card,
+    generate_expert_tip,
 )
 
 
@@ -3888,3 +3893,695 @@ class TestResourceGenerators:
         # Verify stars are sorted
         repo_stars = [r.props["stars"] for r in repos]
         assert repo_stars == [220000, 205000, 92000]
+
+
+class TestPeopleComponentGenerators:
+    """Test suite for people component generators (ProfileCard, CompanyCard, QuoteCard, ExpertTip)."""
+
+    # ProfileCard Tests
+
+    def test_generate_profile_card_basic(self):
+        """Test generating a basic profile card with required fields only."""
+        reset_id_counter()
+
+        card = generate_profile_card(
+            name="Jane Smith",
+            title="AI Researcher"
+        )
+
+        assert card.type == "a2ui.ProfileCard"
+        assert card.id == "profile-card-1"
+        assert card.props["name"] == "Jane Smith"
+        assert card.props["title"] == "AI Researcher"
+        assert "bio" not in card.props
+        assert "avatarUrl" not in card.props
+        assert "contact" not in card.props
+        assert "socialLinks" not in card.props
+
+    def test_generate_profile_card_with_bio_and_avatar(self):
+        """Test generating a profile card with bio and avatar."""
+        reset_id_counter()
+
+        card = generate_profile_card(
+            name="Dr. John Doe",
+            title="Chief Technology Officer",
+            bio="20+ years building scalable systems",
+            avatar_url="https://example.com/avatar.jpg"
+        )
+
+        assert card.type == "a2ui.ProfileCard"
+        assert card.props["name"] == "Dr. John Doe"
+        assert card.props["title"] == "Chief Technology Officer"
+        assert card.props["bio"] == "20+ years building scalable systems"
+        assert card.props["avatarUrl"] == "https://example.com/avatar.jpg"
+
+    def test_generate_profile_card_with_contact(self):
+        """Test generating a profile card with contact information."""
+        reset_id_counter()
+
+        card = generate_profile_card(
+            name="Alice Johnson",
+            title="Senior Engineer",
+            contact={
+                "email": "alice@example.com",
+                "phone": "+1-555-0100",
+                "location": "San Francisco, CA"
+            }
+        )
+
+        assert card.type == "a2ui.ProfileCard"
+        assert card.props["contact"]["email"] == "alice@example.com"
+        assert card.props["contact"]["phone"] == "+1-555-0100"
+        assert card.props["contact"]["location"] == "San Francisco, CA"
+
+    def test_generate_profile_card_with_social_links(self):
+        """Test generating a profile card with social media links."""
+        reset_id_counter()
+
+        social_links = [
+            {"platform": "twitter", "url": "https://twitter.com/johndoe"},
+            {"platform": "linkedin", "url": "https://linkedin.com/in/johndoe"},
+            {"platform": "github", "url": "https://github.com/johndoe"}
+        ]
+
+        card = generate_profile_card(
+            name="John Doe",
+            title="Software Developer",
+            social_links=social_links
+        )
+
+        assert card.type == "a2ui.ProfileCard"
+        assert len(card.props["socialLinks"]) == 3
+        assert card.props["socialLinks"][0]["platform"] == "twitter"
+        assert card.props["socialLinks"][0]["url"] == "https://twitter.com/johndoe"
+        assert card.props["socialLinks"][1]["platform"] == "linkedin"
+        assert card.props["socialLinks"][2]["platform"] == "github"
+
+    def test_generate_profile_card_all_features(self):
+        """Test generating a profile card with all features."""
+        reset_id_counter()
+
+        card = generate_profile_card(
+            name="Dr. Sarah Chen",
+            title="Machine Learning Researcher",
+            bio="Expert in NLP and computer vision with 15 years experience",
+            avatar_url="https://example.com/sarah.jpg",
+            contact={
+                "email": "sarah@university.edu",
+                "location": "Cambridge, MA"
+            },
+            social_links=[
+                {"platform": "twitter", "url": "https://twitter.com/sarahchen"},
+                {"platform": "linkedin", "url": "https://linkedin.com/in/sarahchen"},
+                {"platform": "github", "url": "https://github.com/sarahchen"},
+                {"platform": "website", "url": "https://sarahchen.com"}
+            ]
+        )
+
+        assert card.type == "a2ui.ProfileCard"
+        assert card.props["name"] == "Dr. Sarah Chen"
+        assert card.props["title"] == "Machine Learning Researcher"
+        assert "bio" in card.props
+        assert "avatarUrl" in card.props
+        assert "contact" in card.props
+        assert len(card.props["socialLinks"]) == 4
+
+    def test_generate_profile_card_invalid_email(self):
+        """Test that invalid email format raises error."""
+        with pytest.raises(ValueError, match="Invalid email format"):
+            generate_profile_card(
+                name="Test User",
+                title="Developer",
+                contact={"email": "invalid-email"}
+            )
+
+    def test_generate_profile_card_too_many_social_links(self):
+        """Test that more than 5 social links raises error."""
+        social_links = [
+            {"platform": f"platform{i}", "url": f"https://example.com/{i}"}
+            for i in range(6)
+        ]
+
+        with pytest.raises(ValueError, match="supports up to 5 social links"):
+            generate_profile_card(
+                name="Test User",
+                title="Developer",
+                social_links=social_links
+            )
+
+    def test_generate_profile_card_missing_social_link_keys(self):
+        """Test that social links without required keys raise error."""
+        # Missing 'platform'
+        with pytest.raises(ValueError, match="missing required key: 'platform'"):
+            generate_profile_card(
+                name="Test User",
+                title="Developer",
+                social_links=[{"url": "https://example.com"}]
+            )
+
+        # Missing 'url'
+        with pytest.raises(ValueError, match="missing required key: 'url'"):
+            generate_profile_card(
+                name="Test User",
+                title="Developer",
+                social_links=[{"platform": "twitter"}]
+            )
+
+    def test_generate_profile_card_empty_name(self):
+        """Test that empty name raises error."""
+        with pytest.raises(ValueError, match="name cannot be empty"):
+            generate_profile_card(name="", title="Developer")
+
+    def test_generate_profile_card_empty_title(self):
+        """Test that empty title raises error."""
+        with pytest.raises(ValueError, match="title cannot be empty"):
+            generate_profile_card(name="Test User", title="")
+
+    # CompanyCard Tests
+
+    def test_generate_company_card_basic(self):
+        """Test generating a basic company card with required fields only."""
+        reset_id_counter()
+
+        card = generate_company_card(
+            name="Acme Corp",
+            description="Leading provider of innovative solutions"
+        )
+
+        assert card.type == "a2ui.CompanyCard"
+        assert card.id == "company-card-1"
+        assert card.props["name"] == "Acme Corp"
+        assert card.props["description"] == "Leading provider of innovative solutions"
+        assert "logoUrl" not in card.props
+        assert "website" not in card.props
+        assert "headquarters" not in card.props
+        assert "foundedYear" not in card.props
+        assert "employeeCount" not in card.props
+        assert "industries" not in card.props
+
+    def test_generate_company_card_with_website(self):
+        """Test generating a company card with website URL."""
+        reset_id_counter()
+
+        card = generate_company_card(
+            name="TechStart Inc.",
+            description="AI-powered analytics platform",
+            website="https://techstart.com"
+        )
+
+        assert card.type == "a2ui.CompanyCard"
+        assert card.props["website"] == "https://techstart.com"
+
+    def test_generate_company_card_all_features(self):
+        """Test generating a company card with all features."""
+        reset_id_counter()
+
+        card = generate_company_card(
+            name="Innovation Labs",
+            description="Building the future of AI",
+            logo_url="https://example.com/logo.png",
+            website="https://innovationlabs.com",
+            headquarters="San Francisco, CA",
+            founded_year=2015,
+            employee_count="100-500",
+            industries=["Technology", "Artificial Intelligence", "Analytics"]
+        )
+
+        assert card.type == "a2ui.CompanyCard"
+        assert card.props["name"] == "Innovation Labs"
+        assert card.props["description"] == "Building the future of AI"
+        assert card.props["logoUrl"] == "https://example.com/logo.png"
+        assert card.props["website"] == "https://innovationlabs.com"
+        assert card.props["headquarters"] == "San Francisco, CA"
+        assert card.props["foundedYear"] == 2015
+        assert card.props["employeeCount"] == "100-500"
+        assert len(card.props["industries"]) == 3
+        assert "Technology" in card.props["industries"]
+
+    def test_generate_company_card_invalid_website_url(self):
+        """Test that invalid website URL format raises error."""
+        with pytest.raises(ValueError, match="must start with http:// or https://"):
+            generate_company_card(
+                name="Test Corp",
+                description="Test company",
+                website="invalid-url"
+            )
+
+    def test_generate_company_card_invalid_founded_year(self):
+        """Test that invalid founded year raises error."""
+        # Year too early
+        with pytest.raises(ValueError, match="must be between 1800 and"):
+            generate_company_card(
+                name="Test Corp",
+                description="Test company",
+                founded_year=1700
+            )
+
+        # Year in future
+        with pytest.raises(ValueError, match="must be between 1800 and"):
+            generate_company_card(
+                name="Test Corp",
+                description="Test company",
+                founded_year=2100
+            )
+
+    def test_generate_company_card_too_many_industries(self):
+        """Test that more than 5 industries raises error."""
+        industries = [f"Industry {i}" for i in range(6)]
+
+        with pytest.raises(ValueError, match="supports up to 5 industries"):
+            generate_company_card(
+                name="Test Corp",
+                description="Test company",
+                industries=industries
+            )
+
+    def test_generate_company_card_empty_name(self):
+        """Test that empty name raises error."""
+        with pytest.raises(ValueError, match="name cannot be empty"):
+            generate_company_card(name="", description="Test company")
+
+    def test_generate_company_card_empty_description(self):
+        """Test that empty description raises error."""
+        with pytest.raises(ValueError, match="description cannot be empty"):
+            generate_company_card(name="Test Corp", description="")
+
+    # QuoteCard Tests
+
+    def test_generate_quote_card_basic(self):
+        """Test generating a basic quote card with required fields only."""
+        reset_id_counter()
+
+        card = generate_quote_card(
+            text="The best way to predict the future is to invent it.",
+            author="Alan Kay"
+        )
+
+        assert card.type == "a2ui.QuoteCard"
+        assert card.id == "quote-card-1"
+        assert card.props["text"] == "The best way to predict the future is to invent it."
+        assert card.props["author"] == "Alan Kay"
+        assert card.props["highlight"] == False
+        assert "source" not in card.props
+
+    def test_generate_quote_card_with_source(self):
+        """Test generating a quote card with source."""
+        reset_id_counter()
+
+        card = generate_quote_card(
+            text="Stay hungry, stay foolish.",
+            author="Steve Jobs",
+            source="Stanford Commencement Speech, 2005"
+        )
+
+        assert card.type == "a2ui.QuoteCard"
+        assert card.props["text"] == "Stay hungry, stay foolish."
+        assert card.props["author"] == "Steve Jobs"
+        assert card.props["source"] == "Stanford Commencement Speech, 2005"
+
+    def test_generate_quote_card_highlighted(self):
+        """Test generating a highlighted quote card."""
+        reset_id_counter()
+
+        card = generate_quote_card(
+            text="Innovation distinguishes between a leader and a follower.",
+            author="Steve Jobs",
+            highlight=True
+        )
+
+        assert card.type == "a2ui.QuoteCard"
+        assert card.props["highlight"] == True
+
+    def test_generate_quote_card_long_quote(self):
+        """Test generating a quote card with long text (under 500 chars)."""
+        reset_id_counter()
+
+        long_text = "A" * 400  # 400 characters
+
+        card = generate_quote_card(
+            text=long_text,
+            author="Test Author"
+        )
+
+        assert card.type == "a2ui.QuoteCard"
+        assert len(card.props["text"]) == 400
+
+    def test_generate_quote_card_empty_text(self):
+        """Test that empty text raises error."""
+        with pytest.raises(ValueError, match="text cannot be empty"):
+            generate_quote_card(text="", author="Test Author")
+
+    def test_generate_quote_card_text_too_long(self):
+        """Test that text exceeding 500 characters raises error."""
+        long_text = "A" * 501  # 501 characters
+
+        with pytest.raises(ValueError, match="must be 500 characters or less"):
+            generate_quote_card(text=long_text, author="Test Author")
+
+    def test_generate_quote_card_empty_author(self):
+        """Test that empty author raises error."""
+        with pytest.raises(ValueError, match="author cannot be empty"):
+            generate_quote_card(text="Test quote", author="")
+
+    # ExpertTip Tests
+
+    def test_generate_expert_tip_basic(self):
+        """Test generating a basic expert tip with required fields only."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Use Async/Await",
+            content="Always use async/await instead of callbacks for cleaner code"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.id == "expert-tip-1"
+        assert tip.props["title"] == "Use Async/Await"
+        assert tip.props["content"] == "Always use async/await instead of callbacks for cleaner code"
+        assert "expertName" not in tip.props
+        assert "difficulty" not in tip.props
+        assert "category" not in tip.props
+
+    def test_generate_expert_tip_with_expert_name(self):
+        """Test generating an expert tip with expert name."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Optimize React Performance",
+            content="Use React.memo() to prevent unnecessary re-renders",
+            expert_name="Sarah Johnson"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["expertName"] == "Sarah Johnson"
+
+    def test_generate_expert_tip_with_difficulty_beginner(self):
+        """Test generating a beginner expert tip."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Git Commit Messages",
+            content="Write clear, descriptive commit messages in present tense",
+            difficulty="beginner"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["difficulty"] == "beginner"
+
+    def test_generate_expert_tip_with_difficulty_intermediate(self):
+        """Test generating an intermediate expert tip."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Database Indexing",
+            content="Create indexes on columns used in WHERE clauses",
+            difficulty="intermediate"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["difficulty"] == "intermediate"
+
+    def test_generate_expert_tip_with_difficulty_advanced(self):
+        """Test generating an advanced expert tip."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Distributed Systems",
+            content="Use eventual consistency for high availability",
+            difficulty="advanced"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["difficulty"] == "advanced"
+
+    def test_generate_expert_tip_with_category(self):
+        """Test generating an expert tip with category."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Design System",
+            content="Establish a consistent design system early",
+            category="design"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["category"] == "design"
+
+    def test_generate_expert_tip_all_features(self):
+        """Test generating an expert tip with all features."""
+        reset_id_counter()
+
+        tip = generate_expert_tip(
+            title="Microservices Architecture",
+            content="Use API gateways to manage service communication",
+            expert_name="John Smith",
+            difficulty="advanced",
+            category="development"
+        )
+
+        assert tip.type == "a2ui.ExpertTip"
+        assert tip.props["title"] == "Microservices Architecture"
+        assert tip.props["content"] == "Use API gateways to manage service communication"
+        assert tip.props["expertName"] == "John Smith"
+        assert tip.props["difficulty"] == "advanced"
+        assert tip.props["category"] == "development"
+
+    def test_generate_expert_tip_invalid_difficulty(self):
+        """Test that invalid difficulty raises error."""
+        with pytest.raises(ValueError, match="Invalid difficulty"):
+            generate_expert_tip(
+                title="Test Tip",
+                content="Test content",
+                difficulty="expert"  # Invalid, should be beginner/intermediate/advanced
+            )
+
+    def test_generate_expert_tip_empty_title(self):
+        """Test that empty title raises error."""
+        with pytest.raises(ValueError, match="title cannot be empty"):
+            generate_expert_tip(title="", content="Test content")
+
+    def test_generate_expert_tip_empty_content(self):
+        """Test that empty content raises error."""
+        with pytest.raises(ValueError, match="content cannot be empty"):
+            generate_expert_tip(title="Test Tip", content="")
+
+    # Integration Tests
+
+    def test_people_integration_team_page(self):
+        """Test integration: generating a team page with profiles."""
+        reset_id_counter()
+
+        team = [
+            generate_profile_card(
+                name="Alice Chen",
+                title="CEO & Founder",
+                bio="Serial entrepreneur with 3 successful exits",
+                avatar_url="https://example.com/alice.jpg",
+                social_links=[
+                    {"platform": "linkedin", "url": "https://linkedin.com/in/alicechen"},
+                    {"platform": "twitter", "url": "https://twitter.com/alicechen"}
+                ]
+            ),
+            generate_profile_card(
+                name="Bob Martinez",
+                title="CTO",
+                bio="Former Google engineer, AI expert",
+                avatar_url="https://example.com/bob.jpg",
+                contact={"email": "bob@company.com"}
+            ),
+            generate_profile_card(
+                name="Carol Kim",
+                title="Head of Design",
+                bio="Award-winning product designer"
+            )
+        ]
+
+        # Verify team structure
+        assert len(team) == 3
+        assert all(p.type == "a2ui.ProfileCard" for p in team)
+        assert team[0].props["name"] == "Alice Chen"
+        assert team[1].props["name"] == "Bob Martinez"
+        assert team[2].props["name"] == "Carol Kim"
+        assert "socialLinks" in team[0].props
+        assert "contact" in team[1].props
+
+    def test_people_integration_testimonials_page(self):
+        """Test integration: generating a testimonials page with quotes."""
+        reset_id_counter()
+
+        testimonials = [
+            generate_quote_card(
+                text="This product transformed our workflow completely. Highly recommended!",
+                author="Jane Smith",
+                source="TechCrunch Review",
+                highlight=True
+            ),
+            generate_quote_card(
+                text="Best decision we made this year. The ROI was immediate.",
+                author="John Doe",
+                source="CEO, Acme Corp"
+            ),
+            generate_quote_card(
+                text="Outstanding support team and incredible features.",
+                author="Sarah Johnson",
+                source="Product Hunt"
+            )
+        ]
+
+        # Verify testimonials
+        assert len(testimonials) == 3
+        assert all(q.type == "a2ui.QuoteCard" for q in testimonials)
+        assert testimonials[0].props["highlight"] == True
+        assert testimonials[1].props["highlight"] == False
+        assert all("author" in q.props for q in testimonials)
+        assert all("source" in q.props for q in testimonials)
+
+    def test_people_integration_company_directory(self):
+        """Test integration: generating a company directory."""
+        reset_id_counter()
+
+        companies = [
+            generate_company_card(
+                name="TechCorp Inc.",
+                description="Leading AI solutions provider",
+                website="https://techcorp.com",
+                headquarters="San Francisco, CA",
+                founded_year=2015,
+                employee_count="500-1000",
+                industries=["Technology", "AI", "Cloud Computing"]
+            ),
+            generate_company_card(
+                name="DataSystems Ltd.",
+                description="Enterprise data analytics platform",
+                founded_year=2018,
+                employee_count="100-500",
+                industries=["Analytics", "Big Data"]
+            ),
+            generate_company_card(
+                name="CloudStart",
+                description="Startup focused on cloud infrastructure"
+            )
+        ]
+
+        # Verify company directory
+        assert len(companies) == 3
+        assert all(c.type == "a2ui.CompanyCard" for c in companies)
+        assert companies[0].props["foundedYear"] == 2015
+        assert companies[1].props["foundedYear"] == 2018
+        assert "industries" in companies[0].props
+        assert len(companies[0].props["industries"]) == 3
+
+    def test_people_integration_expert_tips_page(self):
+        """Test integration: generating an expert tips page."""
+        reset_id_counter()
+
+        tips = [
+            generate_expert_tip(
+                title="Version Control Best Practices",
+                content="Always create feature branches and use pull requests",
+                expert_name="Alice Chen",
+                difficulty="beginner",
+                category="development"
+            ),
+            generate_expert_tip(
+                title="API Design Principles",
+                content="Use RESTful conventions and versioning from the start",
+                expert_name="Bob Martinez",
+                difficulty="intermediate",
+                category="development"
+            ),
+            generate_expert_tip(
+                title="System Architecture Patterns",
+                content="Consider event-driven architecture for scalability",
+                expert_name="Carol Kim",
+                difficulty="advanced",
+                category="architecture"
+            )
+        ]
+
+        # Verify tips structure
+        assert len(tips) == 3
+        assert all(t.type == "a2ui.ExpertTip" for t in tips)
+        assert tips[0].props["difficulty"] == "beginner"
+        assert tips[1].props["difficulty"] == "intermediate"
+        assert tips[2].props["difficulty"] == "advanced"
+        assert all("expertName" in t.props for t in tips)
+        assert all("category" in t.props for t in tips)
+
+    def test_people_integration_mixed_content(self):
+        """Test integration: mixing people components with other components."""
+        reset_id_counter()
+
+        content = [
+            # Profile of expert
+            generate_profile_card(
+                name="Dr. Emily Zhang",
+                title="AI Research Scientist",
+                bio="Leading researcher in machine learning",
+                social_links=[
+                    {"platform": "linkedin", "url": "https://linkedin.com/in/emilyzhang"}
+                ]
+            ),
+            # Quote from expert
+            generate_quote_card(
+                text="AI will transform every industry in the next decade.",
+                author="Dr. Emily Zhang",
+                highlight=True
+            ),
+            # Expert tip from same person
+            generate_expert_tip(
+                title="Getting Started with ML",
+                content="Focus on understanding the fundamentals before diving into frameworks",
+                expert_name="Dr. Emily Zhang",
+                difficulty="beginner",
+                category="machine-learning"
+            ),
+            # Company where expert works
+            generate_company_card(
+                name="AI Research Labs",
+                description="Cutting-edge AI research organization",
+                website="https://airesearchlabs.com",
+                industries=["Research", "AI", "Technology"]
+            )
+        ]
+
+        # Verify mixed content
+        assert len(content) == 4
+        assert content[0].type == "a2ui.ProfileCard"
+        assert content[1].type == "a2ui.QuoteCard"
+        assert content[2].type == "a2ui.ExpertTip"
+        assert content[3].type == "a2ui.CompanyCard"
+
+        # Verify expert consistency
+        assert content[0].props["name"] == "Dr. Emily Zhang"
+        assert content[1].props["author"] == "Dr. Emily Zhang"
+        assert content[2].props["expertName"] == "Dr. Emily Zhang"
+
+    def test_people_batch_generation(self):
+        """Test batch generation of people components."""
+        reset_id_counter()
+
+        # Generate batch of profiles
+        profiles = [
+            generate_profile_card(f"Person {i}", f"Title {i}")
+            for i in range(1, 6)
+        ]
+
+        # Generate batch of quotes
+        quotes = [
+            generate_quote_card(f"Quote text {i}", f"Author {i}")
+            for i in range(1, 4)
+        ]
+
+        # Verify batch creation
+        assert len(profiles) == 5
+        assert len(quotes) == 3
+        assert all(p.type == "a2ui.ProfileCard" for p in profiles)
+        assert all(q.type == "a2ui.QuoteCard" for q in quotes)
+
+        # Verify sequential IDs
+        profile_ids = [p.id for p in profiles]
+        assert profile_ids == [
+            "profile-card-1", "profile-card-2", "profile-card-3",
+            "profile-card-4", "profile-card-5"
+        ]
