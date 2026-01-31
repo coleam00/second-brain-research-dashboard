@@ -22,6 +22,11 @@ from a2ui_generator import (
     validate_component_props,
     generate_components_batch,
     VALID_COMPONENT_TYPES,
+    # News generators
+    generate_headline_card,
+    generate_trend_indicator,
+    generate_timeline_event,
+    generate_news_ticker,
 )
 
 
@@ -530,3 +535,443 @@ class TestIntegration:
 
         ids = [c.id for c in components]
         assert len(ids) == len(set(ids))  # All IDs are unique
+
+
+class TestNewsGenerators:
+    """Test suite for news component generators."""
+
+    def setup_method(self):
+        """Reset ID counter before each test."""
+        reset_id_counter()
+
+    def test_generate_headline_card_basic(self):
+        """Test generating HeadlineCard with required fields."""
+        card = generate_headline_card(
+            title="AI Breakthrough Announced",
+            summary="Major advancement in natural language processing",
+            source="Tech Daily",
+            published_at="2026-01-30T10:00:00Z"
+        )
+
+        assert isinstance(card, A2UIComponent)
+        assert card.type == "a2ui.HeadlineCard"
+        assert card.props["title"] == "AI Breakthrough Announced"
+        assert card.props["summary"] == "Major advancement in natural language processing"
+        assert card.props["source"] == "Tech Daily"
+        assert card.props["publishedAt"] == "2026-01-30T10:00:00Z"
+        assert card.props["sentiment"] == "neutral"  # Default value
+        assert "imageUrl" not in card.props  # Optional field not included
+
+    def test_generate_headline_card_with_sentiment(self):
+        """Test HeadlineCard with different sentiment values."""
+        positive_card = generate_headline_card(
+            title="Market Soars",
+            summary="Record highs reached",
+            source="Financial Times",
+            published_at="2026-01-30T10:00:00Z",
+            sentiment="positive"
+        )
+        assert positive_card.props["sentiment"] == "positive"
+
+        negative_card = generate_headline_card(
+            title="Crisis Deepens",
+            summary="Concerns mount",
+            source="News Corp",
+            published_at="2026-01-30T10:00:00Z",
+            sentiment="negative"
+        )
+        assert negative_card.props["sentiment"] == "negative"
+
+    def test_generate_headline_card_with_image(self):
+        """Test HeadlineCard with optional image URL."""
+        card = generate_headline_card(
+            title="Test Article",
+            summary="Test summary",
+            source="Test Source",
+            published_at="2026-01-30T10:00:00Z",
+            image_url="https://example.com/image.jpg"
+        )
+
+        assert card.props["imageUrl"] == "https://example.com/image.jpg"
+
+    def test_generate_headline_card_json_serialization(self):
+        """Test HeadlineCard serializes to valid JSON."""
+        card = generate_headline_card(
+            title="Test",
+            summary="Summary",
+            source="Source",
+            published_at="2026-01-30T10:00:00Z"
+        )
+
+        card_dict = card.model_dump(exclude_none=True)
+        json_str = json.dumps(card_dict)
+        parsed = json.loads(json_str)
+
+        assert parsed["type"] == "a2ui.HeadlineCard"
+        assert parsed["props"]["title"] == "Test"
+
+    def test_generate_trend_indicator_basic(self):
+        """Test generating TrendIndicator with required fields."""
+        indicator = generate_trend_indicator(
+            label="Market Cap",
+            value=2.5,
+            trend="up",
+            change=12.3
+        )
+
+        assert isinstance(indicator, A2UIComponent)
+        assert indicator.type == "a2ui.TrendIndicator"
+        assert indicator.props["label"] == "Market Cap"
+        assert indicator.props["value"] == 2.5
+        assert indicator.props["trend"] == "up"
+        assert indicator.props["change"] == 12.3
+        assert "unit" not in indicator.props  # Optional field not included
+
+    def test_generate_trend_indicator_all_trends(self):
+        """Test TrendIndicator with all valid trend values."""
+        up_trend = generate_trend_indicator(
+            label="Growth", value=100, trend="up", change=5.5
+        )
+        assert up_trend.props["trend"] == "up"
+
+        down_trend = generate_trend_indicator(
+            label="Decline", value=90, trend="down", change=-5.5
+        )
+        assert down_trend.props["trend"] == "down"
+
+        stable_trend = generate_trend_indicator(
+            label="Stable", value=100, trend="stable", change=0.1
+        )
+        assert stable_trend.props["trend"] == "stable"
+
+    def test_generate_trend_indicator_with_unit(self):
+        """Test TrendIndicator with various units."""
+        percent_trend = generate_trend_indicator(
+            label="Growth Rate", value=5.5, trend="up", change=2.3, unit="%"
+        )
+        assert percent_trend.props["unit"] == "%"
+
+        points_trend = generate_trend_indicator(
+            label="Score", value=85, trend="up", change=10, unit="points"
+        )
+        assert points_trend.props["unit"] == "points"
+
+        currency_trend = generate_trend_indicator(
+            label="Price", value=100.50, trend="down", change=-5.25, unit="USD"
+        )
+        assert currency_trend.props["unit"] == "USD"
+
+    def test_generate_trend_indicator_invalid_trend(self):
+        """Test TrendIndicator raises error for invalid trend."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_trend_indicator(
+                label="Test", value=100, trend="sideways", change=0
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "invalid trend value" in error_msg
+        assert "sideways" in error_msg
+        assert "up" in error_msg and "down" in error_msg and "stable" in error_msg
+
+    def test_generate_timeline_event_basic(self):
+        """Test generating TimelineEvent with required fields."""
+        event = generate_timeline_event(
+            title="Product Launch",
+            timestamp="2026-01-15T09:00:00Z",
+            content="New AI model released to public"
+        )
+
+        assert isinstance(event, A2UIComponent)
+        assert event.type == "a2ui.TimelineEvent"
+        assert event.props["title"] == "Product Launch"
+        assert event.props["timestamp"] == "2026-01-15T09:00:00Z"
+        assert event.props["content"] == "New AI model released to public"
+        assert event.props["eventType"] == "article"  # Default value
+        assert "icon" not in event.props  # Optional field not included
+
+    def test_generate_timeline_event_all_types(self):
+        """Test TimelineEvent with all valid event types."""
+        article_event = generate_timeline_event(
+            title="Article", timestamp="2026-01-30T10:00:00Z",
+            content="Content", event_type="article"
+        )
+        assert article_event.props["eventType"] == "article"
+
+        announcement_event = generate_timeline_event(
+            title="Announcement", timestamp="2026-01-30T10:00:00Z",
+            content="Content", event_type="announcement"
+        )
+        assert announcement_event.props["eventType"] == "announcement"
+
+        milestone_event = generate_timeline_event(
+            title="Milestone", timestamp="2026-01-30T10:00:00Z",
+            content="Content", event_type="milestone"
+        )
+        assert milestone_event.props["eventType"] == "milestone"
+
+        update_event = generate_timeline_event(
+            title="Update", timestamp="2026-01-30T10:00:00Z",
+            content="Content", event_type="update"
+        )
+        assert update_event.props["eventType"] == "update"
+
+    def test_generate_timeline_event_with_icon(self):
+        """Test TimelineEvent with optional icon."""
+        event = generate_timeline_event(
+            title="Launch",
+            timestamp="2026-01-30T10:00:00Z",
+            content="Product launched",
+            icon="rocket"
+        )
+
+        assert event.props["icon"] == "rocket"
+
+    def test_generate_timeline_event_invalid_type(self):
+        """Test TimelineEvent raises error for invalid event type."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_timeline_event(
+                title="Test",
+                timestamp="2026-01-30T10:00:00Z",
+                content="Content",
+                event_type="invalid_type"
+            )
+
+        assert "Invalid event_type" in str(exc_info.value)
+        assert "invalid_type" in str(exc_info.value)
+
+    def test_generate_news_ticker_basic(self):
+        """Test generating NewsTicker with multiple items."""
+        items = [
+            {
+                "text": "Markets up 2% on strong earnings",
+                "url": "https://example.com/market-news",
+                "timestamp": "2026-01-30T10:00:00Z"
+            },
+            {
+                "text": "New AI regulation proposed",
+                "url": "https://example.com/ai-regulation",
+                "timestamp": "2026-01-30T09:30:00Z"
+            }
+        ]
+
+        ticker = generate_news_ticker(items)
+
+        assert isinstance(ticker, A2UIComponent)
+        assert ticker.type == "a2ui.NewsTicker"
+        assert len(ticker.props["items"]) == 2
+        assert ticker.props["items"][0]["text"] == "Markets up 2% on strong earnings"
+        assert ticker.props["items"][1]["url"] == "https://example.com/ai-regulation"
+
+    def test_generate_news_ticker_single_item(self):
+        """Test NewsTicker with single item."""
+        items = [
+            {
+                "text": "Breaking news",
+                "url": "https://example.com/breaking",
+                "timestamp": "2026-01-30T10:00:00Z"
+            }
+        ]
+
+        ticker = generate_news_ticker(items)
+        assert len(ticker.props["items"]) == 1
+
+    def test_generate_news_ticker_max_items(self):
+        """Test NewsTicker with maximum 10 items."""
+        items = [
+            {
+                "text": f"News item {i}",
+                "url": f"https://example.com/news-{i}",
+                "timestamp": "2026-01-30T10:00:00Z"
+            }
+            for i in range(10)
+        ]
+
+        ticker = generate_news_ticker(items)
+        assert len(ticker.props["items"]) == 10
+
+    def test_generate_news_ticker_too_many_items(self):
+        """Test NewsTicker raises error for more than 10 items."""
+        items = [
+            {
+                "text": f"News item {i}",
+                "url": f"https://example.com/news-{i}",
+                "timestamp": "2026-01-30T10:00:00Z"
+            }
+            for i in range(11)
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_news_ticker(items)
+
+        assert "supports up to 10 items" in str(exc_info.value)
+        assert "11" in str(exc_info.value)
+
+    def test_generate_news_ticker_empty_list(self):
+        """Test NewsTicker raises error for empty items list."""
+        with pytest.raises(ValueError) as exc_info:
+            generate_news_ticker([])
+
+        assert "requires at least one item" in str(exc_info.value)
+
+    def test_generate_news_ticker_missing_required_keys(self):
+        """Test NewsTicker raises error when items missing required keys."""
+        # Missing 'url' key
+        items = [
+            {
+                "text": "News item",
+                "timestamp": "2026-01-30T10:00:00Z"
+            }
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_news_ticker(items)
+
+        assert "missing required keys" in str(exc_info.value)
+        assert "url" in str(exc_info.value)
+
+        # Missing 'timestamp' key
+        items = [
+            {
+                "text": "News item",
+                "url": "https://example.com/news"
+            }
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            generate_news_ticker(items)
+
+        assert "missing required keys" in str(exc_info.value)
+        assert "timestamp" in str(exc_info.value)
+
+
+class TestNewsGeneratorsIntegration:
+    """Integration tests for news component generators."""
+
+    def setup_method(self):
+        """Reset ID counter before each test."""
+        reset_id_counter()
+
+    def test_news_workflow_headline_to_timeline(self):
+        """Test creating a news workflow with headline and timeline."""
+        # Create headline card
+        headline = generate_headline_card(
+            title="Major AI Announcement",
+            summary="Company unveils new language model",
+            source="TechCrunch",
+            published_at="2026-01-30T10:00:00Z",
+            sentiment="positive"
+        )
+
+        # Create timeline events for the story
+        events = [
+            generate_timeline_event(
+                title="Initial Announcement",
+                timestamp="2026-01-30T10:00:00Z",
+                content="CEO announces new model",
+                event_type="announcement"
+            ),
+            generate_timeline_event(
+                title="Technical Details Released",
+                timestamp="2026-01-30T11:00:00Z",
+                content="Research paper published",
+                event_type="article"
+            ),
+            generate_timeline_event(
+                title="Public Beta Launch",
+                timestamp="2026-01-30T14:00:00Z",
+                content="Beta access opened to users",
+                event_type="milestone"
+            )
+        ]
+
+        # Verify all components generated correctly
+        assert headline.type == "a2ui.HeadlineCard"
+        assert all(e.type == "a2ui.TimelineEvent" for e in events)
+        assert len(events) == 3
+
+        # Verify IDs are unique
+        all_ids = [headline.id] + [e.id for e in events]
+        assert len(all_ids) == len(set(all_ids))
+
+    def test_news_workflow_with_trends_and_ticker(self):
+        """Test complete news dashboard with trends and ticker."""
+        # Create trend indicators
+        trends = [
+            generate_trend_indicator(
+                label="Stock Price", value=150.25, trend="up", change=5.2, unit="%"
+            ),
+            generate_trend_indicator(
+                label="Market Cap", value=2.5, trend="up", change=0.3, unit="T USD"
+            ),
+            generate_trend_indicator(
+                label="Trading Volume", value=85, trend="down", change=-12.5, unit="%"
+            )
+        ]
+
+        # Create news ticker
+        ticker = generate_news_ticker([
+            {
+                "text": "Breaking: New product launched",
+                "url": "https://example.com/product",
+                "timestamp": "2026-01-30T10:00:00Z"
+            },
+            {
+                "text": "Markets react positively",
+                "url": "https://example.com/markets",
+                "timestamp": "2026-01-30T10:15:00Z"
+            }
+        ])
+
+        # Verify components
+        assert all(t.type == "a2ui.TrendIndicator" for t in trends)
+        assert ticker.type == "a2ui.NewsTicker"
+        assert len(ticker.props["items"]) == 2
+
+        # Verify all IDs unique
+        all_components = trends + [ticker]
+        all_ids = [c.id for c in all_components]
+        assert len(all_ids) == len(set(all_ids))
+
+    @pytest.mark.asyncio
+    async def test_news_components_emission(self):
+        """Test emitting news components in AG-UI format."""
+        components = [
+            generate_headline_card(
+                title="Test Article",
+                summary="Test summary",
+                source="Test Source",
+                published_at="2026-01-30T10:00:00Z"
+            ),
+            generate_trend_indicator(
+                label="Test Metric", value=100, trend="up", change=10
+            ),
+            generate_timeline_event(
+                title="Test Event",
+                timestamp="2026-01-30T10:00:00Z",
+                content="Test content"
+            )
+        ]
+
+        events = []
+        async for event in emit_components(components):
+            events.append(event)
+
+        assert len(events) == 3
+
+        # Parse and verify first event (HeadlineCard)
+        json_str = events[0].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.HeadlineCard"
+        assert data["props"]["title"] == "Test Article"
+
+        # Parse and verify second event (TrendIndicator)
+        json_str = events[1].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.TrendIndicator"
+        assert data["props"]["trend"] == "up"
+
+        # Parse and verify third event (TimelineEvent)
+        json_str = events[2].replace("data: ", "").strip()
+        data = json.loads(json_str)
+        assert data["type"] == "a2ui.TimelineEvent"
+        assert data["props"]["eventType"] == "article"

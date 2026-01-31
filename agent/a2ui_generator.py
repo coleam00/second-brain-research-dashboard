@@ -399,6 +399,230 @@ def generate_components_batch(
     return components
 
 
+# News Component Generators
+
+def generate_headline_card(
+    title: str,
+    summary: str,
+    source: str,
+    published_at: str,
+    sentiment: str = "neutral",
+    image_url: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a HeadlineCard A2UI component for news articles.
+
+    Creates a headline card component displaying news article information
+    including title, summary, source, and optional sentiment/image.
+
+    Args:
+        title: Article headline/title
+        summary: Brief article summary or excerpt
+        source: News source name (e.g., "TechCrunch", "Reuters")
+        published_at: Publication timestamp (ISO 8601 format recommended)
+        sentiment: Sentiment indicator - "positive", "negative", or "neutral" (default)
+        image_url: Optional URL to article thumbnail/hero image
+
+    Returns:
+        A2UIComponent configured as HeadlineCard
+
+    Examples:
+        >>> card = generate_headline_card(
+        ...     title="AI Breakthrough Announced",
+        ...     summary="Major advancement in natural language processing",
+        ...     source="Tech Daily",
+        ...     published_at="2026-01-30T10:00:00Z",
+        ...     sentiment="positive"
+        ... )
+        >>> card.type
+        "a2ui.HeadlineCard"
+    """
+    props = {
+        "title": title,
+        "summary": summary,
+        "source": source,
+        "publishedAt": published_at,
+        "sentiment": sentiment,
+    }
+
+    if image_url:
+        props["imageUrl"] = image_url
+
+    return generate_component("a2ui.HeadlineCard", props)
+
+
+def generate_trend_indicator(
+    label: str,
+    value: float,
+    trend: str,
+    change: float,
+    unit: str = ""
+) -> A2UIComponent:
+    """
+    Generate a TrendIndicator A2UI component for displaying trends.
+
+    Creates a trend indicator showing a metric value, direction, and change amount.
+    Useful for displaying market movements, statistics changes, etc.
+
+    Args:
+        label: Metric label/name (e.g., "Stock Price", "User Growth")
+        value: Current metric value
+        trend: Trend direction - "up", "down", or "stable"
+        change: Amount of change (e.g., 5.2 for +5.2% or -5.2 for -5.2%)
+        unit: Optional unit suffix (e.g., "%", "points", "USD")
+
+    Returns:
+        A2UIComponent configured as TrendIndicator
+
+    Raises:
+        ValueError: If trend is not "up", "down", or "stable"
+
+    Examples:
+        >>> indicator = generate_trend_indicator(
+        ...     label="Market Cap",
+        ...     value=2.5,
+        ...     trend="up",
+        ...     change=12.3,
+        ...     unit="%"
+        ... )
+        >>> indicator.props["trend"]
+        "up"
+    """
+    valid_trends = {"up", "down", "stable"}
+    if trend not in valid_trends:
+        raise ValueError(
+            f"Invalid trend value: {trend}. Must be one of: {', '.join(valid_trends)}"
+        )
+
+    props = {
+        "label": label,
+        "value": value,
+        "trend": trend,
+        "change": change,
+    }
+
+    if unit:
+        props["unit"] = unit
+
+    return generate_component("a2ui.TrendIndicator", props)
+
+
+def generate_timeline_event(
+    title: str,
+    timestamp: str,
+    content: str,
+    event_type: str = "article",
+    icon: str | None = None
+) -> A2UIComponent:
+    """
+    Generate a TimelineEvent A2UI component for timeline displays.
+
+    Creates a timeline event entry with title, timestamp, content, and optional
+    event type classification and icon.
+
+    Args:
+        title: Event title/headline
+        timestamp: Event timestamp (ISO 8601 format recommended)
+        content: Event description/details
+        event_type: Event classification - "article", "announcement", "milestone", or "update"
+        icon: Optional icon identifier for the event
+
+    Returns:
+        A2UIComponent configured as TimelineEvent
+
+    Raises:
+        ValueError: If event_type is not valid
+
+    Examples:
+        >>> event = generate_timeline_event(
+        ...     title="Product Launch",
+        ...     timestamp="2026-01-15T09:00:00Z",
+        ...     content="New AI model released to public",
+        ...     event_type="milestone"
+        ... )
+        >>> event.props["eventType"]
+        "milestone"
+    """
+    valid_event_types = {"article", "announcement", "milestone", "update"}
+    if event_type not in valid_event_types:
+        raise ValueError(
+            f"Invalid event_type: {event_type}. "
+            f"Must be one of: {', '.join(valid_event_types)}"
+        )
+
+    props = {
+        "title": title,
+        "timestamp": timestamp,
+        "content": content,
+        "eventType": event_type,
+    }
+
+    if icon:
+        props["icon"] = icon
+
+    return generate_component("a2ui.TimelineEvent", props)
+
+
+def generate_news_ticker(items: list[dict[str, str]]) -> A2UIComponent:
+    """
+    Generate a NewsTicker A2UI component for scrolling news updates.
+
+    Creates a news ticker component displaying multiple brief news items
+    in a scrolling or rotating format. Items should contain text, url, and timestamp.
+
+    Args:
+        items: List of news items, each with keys: "text", "url", "timestamp"
+               Maximum 10 items recommended for performance
+
+    Returns:
+        A2UIComponent configured as NewsTicker with items as children
+
+    Raises:
+        ValueError: If items list is empty or exceeds 10 items
+        ValueError: If items don't have required keys
+
+    Examples:
+        >>> ticker = generate_news_ticker([
+        ...     {
+        ...         "text": "Markets up 2% on strong earnings",
+        ...         "url": "https://example.com/market-news",
+        ...         "timestamp": "2026-01-30T10:00:00Z"
+        ...     },
+        ...     {
+        ...         "text": "New AI regulation proposed",
+        ...         "url": "https://example.com/ai-regulation",
+        ...         "timestamp": "2026-01-30T09:30:00Z"
+        ...     }
+        ... ])
+        >>> len(ticker.props["items"])
+        2
+    """
+    if not items:
+        raise ValueError("NewsTicker requires at least one item")
+
+    if len(items) > 10:
+        raise ValueError(
+            f"NewsTicker supports up to 10 items, got {len(items)}. "
+            "Consider using pagination for more items."
+        )
+
+    # Validate that all items have required keys
+    required_keys = {"text", "url", "timestamp"}
+    for i, item in enumerate(items):
+        missing_keys = required_keys - set(item.keys())
+        if missing_keys:
+            raise ValueError(
+                f"Item {i} missing required keys: {', '.join(missing_keys)}. "
+                f"Required: text, url, timestamp"
+            )
+
+    props = {
+        "items": items
+    }
+
+    return generate_component("a2ui.NewsTicker", props)
+
+
 # Export public API
 __all__ = [
     "A2UIComponent",
@@ -409,4 +633,9 @@ __all__ = [
     "validate_component_props",
     "generate_components_batch",
     "VALID_COMPONENT_TYPES",
+    # News generators
+    "generate_headline_card",
+    "generate_trend_indicator",
+    "generate_timeline_event",
+    "generate_news_ticker",
 ]
