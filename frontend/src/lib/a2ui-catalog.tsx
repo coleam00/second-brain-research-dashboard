@@ -7,11 +7,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HeadlineCard, TrendIndicator, TimelineEvent, NewsTicker } from "@/components/A2UI/News";
 import { ProfileCard, CompanyCard, QuoteCard, ExpertTip } from "@/components/A2UI/People";
 import { TLDR, KeyTakeaways, ExecutiveSummary, TableOfContents } from "@/components/A2UI/Summary";
@@ -21,6 +17,7 @@ import { RankedItem, ChecklistItem, ProConItem, BulletPoint } from "@/components
 import { LinkCard, ToolCard, BookCard, RepoCard } from "@/components/A2UI/Resources";
 import { ComparisonTable, VsCard, FeatureMatrix, PricingTable } from "@/components/A2UI/Comparison";
 import { StepCard, CodeBlock, CalloutCard, CommandCard } from "@/components/A2UI/Instructional";
+import { Section, Grid, Columns, Tabs, Accordion, Carousel, Sidebar } from "@/components/A2UI/Layout";
 
 /**
  * A2UI Component Specification
@@ -111,104 +108,25 @@ export const a2uiCatalog: Record<string, ComponentRenderer> = {
   "a2ui.CommandCard": (props: any) => <CommandCard {...props} />,
 
   // ===== LAYOUT COMPONENTS =====
-  "a2ui.Section": ({ title, description }: any, childComponents?: React.ReactNode) => (
-    <section className="space-y-4">
-      {(title || description) && (
-        <div className="space-y-1">
-          {title && <h2 className="text-2xl font-bold">{title}</h2>}
-          {description && <p className="text-muted-foreground">{description}</p>}
-        </div>
-      )}
-      {childComponents && <div className="space-y-4">{childComponents}</div>}
-    </section>
+  "a2ui.Section": (props: any, children?: React.ReactNode) => (
+    <Section {...props}>{children}</Section>
   ),
 
-  "a2ui.Grid": ({ columns, gap }: any, childComponents?: React.ReactNode) => (
-    <div
-      className={`grid gap-${gap || 4}`}
-      style={{ gridTemplateColumns: `repeat(${columns || 2}, minmax(0, 1fr))` }}
-    >
-      {childComponents}
-    </div>
+  "a2ui.Grid": (props: any, children?: React.ReactNode) => (
+    <Grid {...props}>{children}</Grid>
   ),
 
-  "a2ui.Columns": ({ column_count }: any, childComponents?: React.ReactNode) => (
-    <div className={`grid grid-cols-${column_count || 2} gap-4`}>
-      {childComponents}
-    </div>
+  "a2ui.Columns": (props: any, children?: React.ReactNode) => (
+    <Columns {...props}>{children}</Columns>
   ),
 
-  "a2ui.Tabs": ({ tabs }: any) => (
-    <Tabs defaultValue={tabs?.[0]?.id || 'tab-0'}>
-      <TabsList>
-        {tabs?.map((tab: any) => (
-          <TabsTrigger key={tab.id} value={tab.id}>
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {tabs?.map((tab: any) => (
-        <TabsContent key={tab.id} value={tab.id}>
-          <Card>
-            <CardContent className="pt-6">
-              {tab.content}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      ))}
-    </Tabs>
-  ),
+  "a2ui.Tabs": (props: any) => <Tabs {...props} />,
 
-  "a2ui.Accordion": ({ items }: any) => (
-    <Accordion type="single" collapsible>
-      {items?.map((item: any, idx: number) => (
-        <AccordionItem key={idx} value={`item-${idx}`}>
-          <AccordionTrigger>{item.title}</AccordionTrigger>
-          <AccordionContent>{item.content}</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-  ),
+  "a2ui.Accordion": (props: any) => <Accordion {...props} />,
 
-  "a2ui.Carousel": ({ items }: any) => (
-    <Card>
-      <CardContent className="p-0">
-        <div className="relative overflow-hidden">
-          {items?.[0] && (
-            <div className="p-6">
-              {items[0].image_url && (
-                <img src={items[0].image_url} alt={items[0].title} className="w-full h-64 object-cover rounded-lg mb-4" />
-              )}
-              <h3 className="font-semibold mb-2">{items[0].title}</h3>
-              <p className="text-sm text-muted-foreground">{items[0].description}</p>
-            </div>
-          )}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {items?.map((_: any, idx: number) => (
-              <div key={idx} className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary' : 'bg-muted'}`} />
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ),
+  "a2ui.Carousel": (props: any) => <Carousel {...props} />,
 
-  "a2ui.Sidebar": ({ title, items, position }: any) => (
-    <aside className={`w-64 p-4 bg-muted/30 rounded-lg ${position === 'right' ? 'ml-auto' : ''}`}>
-      {title && <h3 className="font-semibold mb-3">{title}</h3>}
-      <nav>
-        <ul className="space-y-2">
-          {items?.map((item: any, idx: number) => (
-            <li key={idx}>
-              <a href={item.url || '#'} className="text-sm hover:text-primary transition-colors">
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </aside>
-  ),
+  "a2ui.Sidebar": (props: any) => <Sidebar {...props} />,
 
   // ===== TAG COMPONENTS =====
   "a2ui.Tag": ({ label, color, removable }: any) => (
