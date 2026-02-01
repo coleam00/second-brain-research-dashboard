@@ -8,7 +8,6 @@
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export interface PricingPlan {
   /** Plan name (e.g., "Basic", "Pro", "Enterprise") */
@@ -78,8 +77,8 @@ export function PricingTable({
     <div className="space-y-4">
       {(title || subtitle) && (
         <div className="text-center space-y-2">
-          {title && <h2 className="text-2xl font-bold dark:text-slate-100">{title}</h2>}
-          {subtitle && <p className="text-muted-foreground dark:text-slate-400">{subtitle}</p>}
+          {title && <h2 className="text-2xl font-bold text-white">{title}</h2>}
+          {subtitle && <p className="text-blue-200">{subtitle}</p>}
         </div>
       )}
 
@@ -98,28 +97,28 @@ export function PricingTable({
         {pricingPlans.map((plan: PricingPlan, idx: number) => (
           <Card
             key={idx}
-            className={`relative dark:bg-slate-900 ${
+            className={`relative bg-gradient-to-br from-card to-secondary/30 ${
               plan.highlighted
-                ? 'border-primary border-2 shadow-lg dark:border-primary dark:shadow-primary/20'
-                : 'dark:border-slate-700'
+                ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/20'
+                : 'border-blue-500/20'
             }`}
           >
             {(plan.highlighted || plan.badge) && (
-              <div className="bg-primary text-primary-foreground text-center py-1 text-xs font-semibold rounded-t-lg">
+              <div className="bg-blue-600 text-white text-center py-1 text-xs font-semibold rounded-t-lg">
                 {plan.badge || 'POPULAR'}
               </div>
             )}
 
             <CardHeader className="pb-4">
-              <CardTitle className="text-base dark:text-slate-100">
+              <CardTitle className="text-base text-white">
                 {plan.name}
               </CardTitle>
               {plan.description && (
-                <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
+                <p className="text-sm text-blue-200 mt-1">
                   {plan.description}
                 </p>
               )}
-              <div className="text-3xl font-bold dark:text-slate-100 mt-2">
+              <div className="text-3xl font-bold text-white mt-2">
                 {typeof plan.price === 'number' ? (
                   <>
                     {plan.currency || currency}
@@ -129,7 +128,7 @@ export function PricingTable({
                   plan.price
                 )}
                 {plan.period && (
-                  <span className="text-sm text-muted-foreground dark:text-slate-400 font-normal">
+                  <span className="text-sm text-blue-300 font-normal">
                     /{plan.period}
                   </span>
                 )}
@@ -141,9 +140,9 @@ export function PricingTable({
                 {plan.features?.map((feature: string, fIdx: number) => (
                   <li
                     key={fIdx}
-                    className="text-sm flex items-start gap-2 dark:text-slate-300"
+                    className="text-sm flex items-start gap-2 text-slate-200"
                   >
-                    <span className="text-primary dark:text-primary/80 mt-0.5">✓</span>
+                    <span className="text-blue-400 mt-0.5">✓</span>
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -152,7 +151,11 @@ export function PricingTable({
 
             <CardFooter className="pt-4">
               <Button
-                className="w-full"
+                className={`w-full ${
+                  plan.highlighted
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-slate-800 hover:bg-slate-700 text-blue-200 border border-blue-500/30'
+                }`}
                 variant={plan.highlighted ? 'default' : 'outline'}
               >
                 {plan.cta || 'Get Started'}

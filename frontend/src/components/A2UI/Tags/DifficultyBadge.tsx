@@ -21,27 +21,27 @@ interface DifficultyConfig {
 const DIFFICULTY_CONFIGS: Record<DifficultyLevel, DifficultyConfig> = {
   beginner: {
     label: 'Beginner',
-    color: 'bg-green-500/20 text-green-700 dark:bg-green-500/30 dark:text-green-300 border-green-500/50',
+    color: 'bg-blue-900/40 text-blue-200 border-blue-400/30',
     bars: 1,
-    emoji: '🟢',
+    emoji: '🔵',
   },
   intermediate: {
     label: 'Intermediate',
-    color: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/30 dark:text-blue-300 border-blue-500/50',
+    color: 'bg-blue-900/60 text-blue-100 border-blue-500/40',
     bars: 2,
     emoji: '🔵',
   },
   advanced: {
     label: 'Advanced',
-    color: 'bg-orange-500/20 text-orange-700 dark:bg-orange-500/30 dark:text-orange-300 border-orange-500/50',
+    color: 'bg-blue-950/70 text-blue-100 border-blue-500/50',
     bars: 3,
-    emoji: '🟠',
+    emoji: '🔵',
   },
   expert: {
     label: 'Expert',
-    color: 'bg-red-500/20 text-red-700 dark:bg-red-500/30 dark:text-red-300 border-red-500/50',
+    color: 'bg-blue-950/80 text-white border-blue-400/60',
     bars: 4,
-    emoji: '🔴',
+    emoji: '🔵',
   },
 };
 

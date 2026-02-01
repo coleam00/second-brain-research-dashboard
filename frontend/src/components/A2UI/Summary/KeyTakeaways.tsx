@@ -51,9 +51,9 @@ export function KeyTakeaways({
   };
 
   return (
-    <Card className="dark:bg-slate-900 dark:border-slate-800">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
-        <CardTitle className="text-base dark:text-slate-100">{title}</CardTitle>
+        <CardTitle className="text-base text-blue-300">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
@@ -64,9 +64,9 @@ export function KeyTakeaways({
 
             return (
               <li key={idx} className="flex items-start gap-2">
-                <span className="text-primary dark:text-blue-400 mt-1">✓</span>
+                <span className="text-blue-400 mt-1">✓</span>
                 <div className="flex-1 flex items-start gap-2 flex-wrap">
-                  <span className="text-sm dark:text-slate-200">{text}</span>
+                  <span className="text-sm text-white">{text}</span>
                   {category && (
                     <Badge variant="secondary" className={getCategoryColor(category)}>
                       {category}

@@ -65,25 +65,33 @@ export function PodcastCard({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       {thumbnail_url && (
-        <div className="relative">
+        <div className="relative group">
           <img
             src={thumbnail_url}
             alt={title}
             className="w-full h-48 object-cover"
             loading="lazy"
           />
+          {/* Blue play button overlay */}
+          <div className="absolute inset-0 bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
+              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
           {duration && (
-            <Badge className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/70" variant="secondary">
+            <Badge className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-600 text-white border-blue-400/30">
               {duration}
             </Badge>
           )}
         </div>
       )}
       <CardHeader>
-        <CardTitle className="text-base line-clamp-2">{title}</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base line-clamp-2 text-white">{title}</CardTitle>
+        <CardDescription className="text-blue-300">
           {host}
           {episode_number && ` • Episode ${episode_number}`}
           {published_at && ` • ${formatDate(published_at)}`}
@@ -92,12 +100,12 @@ export function PodcastCard({
       {(description || categories) && (
         <CardContent className="space-y-3">
           {description && (
-            <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
+            <p className="text-sm text-blue-200/80 line-clamp-3">{description}</p>
           )}
           {categories && categories.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {categories.map((category, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
+                <Badge key={idx} className="text-xs bg-blue-600/50 hover:bg-blue-600/70 text-blue-100 border-blue-400/30">
                   {category}
                 </Badge>
               ))}
@@ -107,7 +115,7 @@ export function PodcastCard({
       )}
       {url && (
         <CardFooter>
-          <Button asChild className="w-full">
+          <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20">
             <a href={url} target="_blank" rel="noopener noreferrer">
               Listen Now
             </a>

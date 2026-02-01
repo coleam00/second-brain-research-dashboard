@@ -28,8 +28,10 @@ from a2ui_generator import (
     generate_component,
     emit_components,
     VALID_COMPONENT_TYPES,
-    orchestrate_dashboard,
 )
+
+# Import the NEW LLM-powered orchestrator
+from llm_orchestrator import orchestrate_dashboard_with_llm
 
 # Configuration
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
@@ -62,20 +64,20 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     global agent
 
-    print(f"🚀 Second Brain Agent starting on port {BACKEND_PORT}")
-    print(f"📡 AG-UI endpoint: http://localhost:{BACKEND_PORT}/ag-ui/stream")
-    print(f"🔑 OpenRouter model: {OPENROUTER_MODEL}")
+    print(f"[*] Second Brain Agent starting on port {BACKEND_PORT}")
+    print(f"[*] AG-UI endpoint: http://localhost:{BACKEND_PORT}/ag-ui/stream")
+    print(f"[*] OpenRouter model: {OPENROUTER_MODEL}")
 
     if not OPENROUTER_API_KEY:
-        print("⚠️  WARNING: OPENROUTER_API_KEY not set in environment")
+        print("[!] WARNING: OPENROUTER_API_KEY not set in environment")
     else:
         # Re-initialize agent if it wasn't initialized during import
         if agent is None:
             try:
                 agent = create_agent()
-                print("✅ Pydantic AI agent initialized successfully")
+                print("[+] Pydantic AI agent initialized successfully")
             except Exception as e:
-                print(f"❌ Failed to initialize agent: {e}")
+                print(f"[-] Failed to initialize agent: {e}")
 
     yield
 
@@ -144,49 +146,56 @@ async def ag_ui_stream(request: AgentRequest):
 
     async def event_generator() -> AsyncGenerator[str, None]:
         """
-        Generate AG-UI protocol events using the orchestrator pipeline.
+        Generate AG-UI protocol events using the LLM-powered orchestrator.
 
-        Uses orchestrate_dashboard() to transform markdown into A2UI components,
-        then streams them via AGUIAdapter protocol.
+        Uses orchestrate_dashboard_with_llm() to transform markdown into A2UI components
+        using actual LLM calls, then streams them via SSE.
         """
+        import json
+
         try:
-            # Step 1: Use orchestrator to generate components from markdown
-            components = orchestrate_dashboard(request.markdown)
+            print(f"\n[STREAM] Starting dashboard generation for {len(request.markdown)} chars of markdown")
 
-            # Step 2: Stream components via AG-UI protocol
-            # Create AGUIAdapter instance for streaming
-            adapter = AGUIAdapter(agent)
+            # Use the LLM-powered orchestrator that yields components as they're generated
+            component_count = 0
+            async for component in orchestrate_dashboard_with_llm(request.markdown):
+                component_count += 1
 
-            # Emit start event
-            yield f"event: start\ndata: {{}}\n\n"
-
-            # Emit each component as an AG-UI message
-            for component in components:
-                # Format component as AG-UI protocol message
-                component_data = {
-                    "type": "component",
-                    "component": {
-                        "type": component.type,
-                        "id": component.id,
-                        "props": component.props
-                    }
+                # Format as A2UI component directly - include layout and zone
+                component_dict = {
+                    "type": component.type,
+                    "id": component.id,
+                    "props": component.props,
                 }
 
-                import json
-                yield f"event: component\ndata: {json.dumps(component_data)}\n\n"
+                # Add layout if present
+                if component.layout:
+                    component_dict["layout"] = component.layout
 
-            # Emit completion event
-            yield f"event: done\ndata: {json.dumps({'component_count': len(components)})}\n\n"
+                # Add zone if present
+                if component.zone:
+                    component_dict["zone"] = component.zone
+
+                print(f"[STREAM] Emitting component {component_count}: {component.type} (zone={component.zone})")
+                yield f"data: {json.dumps(component_dict)}\n\n"
+
+            print(f"[STREAM] Complete - emitted {component_count} components")
+
+            # Emit completion marker
+            yield f"data: [DONE]\n\n"
 
         except Exception as e:
+            import traceback
+            print(f"[STREAM ERROR] {e}")
+            traceback.print_exc()
+
             # Emit error event
-            import json
             error_data = {
                 "type": "error",
                 "message": str(e),
                 "details": "Failed to generate dashboard components"
             }
-            yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+            yield f"data: {json.dumps(error_data)}\n\n"
 
     return StreamingResponse(
         event_generator(),

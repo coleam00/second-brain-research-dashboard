@@ -24,6 +24,11 @@ import { TagCloud, CategoryBadge, DifficultyBadge } from "@/components/A2UI/Tags
  * A2UI Component Specification
  * Matches the backend A2UIComponent structure
  */
+/**
+ * Semantic zones for component grouping
+ */
+export type SemanticZone = 'hero' | 'metrics' | 'insights' | 'content' | 'media' | 'resources' | 'tags';
+
 export interface A2UIComponent {
   id: string;
   type: string; // e.g., "a2ui.StatCard", "a2ui.HeadlineCard"
@@ -40,6 +45,7 @@ export interface A2UIComponent {
     theme?: string;
     className?: string;
   };
+  zone?: SemanticZone; // Semantic zone for grouping
 }
 
 /**

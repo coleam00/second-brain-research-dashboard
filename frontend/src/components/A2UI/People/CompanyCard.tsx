@@ -53,25 +53,25 @@ export function CompanyCard({
   url,
 }: CompanyCardProps): React.ReactElement {
   return (
-    <Card className="dark:border-slate-700">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
         <div className="flex items-start gap-3">
           {logo_url ? (
             <img
               src={logo_url}
               alt={name}
-              className="w-12 h-12 rounded object-contain dark:bg-white/5 p-1"
+              className="w-12 h-12 rounded object-contain bg-blue-950/30 p-1 border border-blue-500/20"
             />
           ) : (
-            <div className="w-12 h-12 rounded bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-              <span className="text-lg font-bold text-primary dark:text-primary/80">
+            <div className="w-12 h-12 rounded bg-blue-950/50 border border-blue-500/20 flex items-center justify-center">
+              <span className="text-lg font-bold text-blue-300">
                 {name.substring(0, 2).toUpperCase()}
               </span>
             </div>
           )}
           <div className="flex-1">
-            <CardTitle className="text-base dark:text-slate-50">{name}</CardTitle>
-            <CardDescription className="dark:text-slate-400 flex flex-wrap gap-1 items-center">
+            <CardTitle className="text-base text-white">{name}</CardTitle>
+            <CardDescription className="text-blue-300 flex flex-wrap gap-1 items-center">
               {industry && <span>{industry}</span>}
               {size && industry && <span>•</span>}
               {size && <span>{size} employees</span>}
@@ -83,10 +83,10 @@ export function CompanyCard({
       </CardHeader>
       {description && (
         <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground dark:text-slate-300">{description}</p>
+          <p className="text-sm text-slate-200">{description}</p>
           {founded && (
             <div className="flex gap-2">
-              <Badge variant="secondary" className="dark:bg-slate-800 dark:text-slate-300">
+              <Badge variant="secondary" className="bg-blue-950/50 text-blue-200 border border-blue-500/30">
                 Founded {founded}
               </Badge>
             </div>
@@ -98,7 +98,7 @@ export function CompanyCard({
           <Button
             asChild
             variant="outline"
-            className="w-full dark:border-slate-600 dark:hover:bg-slate-800"
+            className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200 hover:border-blue-400/50"
           >
             <a href={url} target="_blank" rel="noopener noreferrer">
               Visit Website

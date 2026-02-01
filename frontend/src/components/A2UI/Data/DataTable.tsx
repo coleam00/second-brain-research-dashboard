@@ -70,29 +70,29 @@ export function DataTable({
   const displayRows = sortable ? sortedRows : rows;
 
   return (
-    <Card>
+    <Card className="border-blue-500/20 overflow-hidden">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
             {caption && (
-              <caption className="p-4 text-sm text-muted-foreground dark:text-slate-400">
+              <caption className="p-4 text-sm text-blue-300/70">
                 {caption}
               </caption>
             )}
-            <thead className="border-b dark:border-slate-700">
+            <thead className="border-b border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-transparent">
               <tr>
                 {headers?.map((header: string, idx: number) => (
                   <th
                     key={idx}
-                    className={`px-4 py-3 text-left text-sm font-semibold dark:text-slate-200 ${
-                      sortable ? 'cursor-pointer hover:bg-muted/50 dark:hover:bg-slate-800' : ''
+                    className={`px-4 py-3 text-left text-sm font-semibold text-blue-200 ${
+                      sortable ? 'cursor-pointer hover:bg-blue-500/10' : ''
                     }`}
                     onClick={() => handleSort(idx)}
                   >
                     <div className="flex items-center gap-2">
                       {header}
                       {sortable && sortColumn === idx && (
-                        <span className="text-xs text-muted-foreground dark:text-slate-400">
+                        <span className="text-xs text-blue-400">
                           {sortDirection === 'asc' ? '↑' : '↓'}
                         </span>
                       )}
@@ -105,12 +105,14 @@ export function DataTable({
               {displayRows?.map((row: (string | number)[], rowIdx: number) => (
                 <tr
                   key={rowIdx}
-                  className="border-b last:border-0 hover:bg-muted/50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  className={`border-b border-blue-500/10 last:border-0 hover:bg-blue-500/10 transition-colors ${
+                    rowIdx % 2 === 0 ? 'bg-secondary/20' : 'bg-transparent'
+                  }`}
                 >
                   {row.map((cell, cellIdx) => (
                     <td
                       key={cellIdx}
-                      className="px-4 py-3 text-sm dark:text-slate-300"
+                      className="px-4 py-3 text-sm text-foreground/90"
                     >
                       {cell}
                     </td>

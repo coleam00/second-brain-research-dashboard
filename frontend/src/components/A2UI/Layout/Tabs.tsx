@@ -46,16 +46,20 @@ export function Tabs({
 
   return (
     <ShadcnTabs defaultValue={defaultValue} className={className}>
-      <TabsList className="w-full justify-start">
+      <TabsList className="w-full justify-start bg-slate-900/50 border border-blue-500/20 p-1">
         {tabs.map((tab) => (
-          <TabsTrigger key={tab.id} value={tab.id}>
+          <TabsTrigger
+            key={tab.id}
+            value={tab.id}
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/20 data-[state=inactive]:text-blue-200/60 hover:text-blue-100 transition-all"
+          >
             {tab.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {tabs.map((tab) => (
         <TabsContent key={tab.id} value={tab.id}>
-          <Card>
+          <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
             <CardContent className="pt-6">
               {tab.content}
             </CardContent>

@@ -7,15 +7,15 @@ export function EmptyState() {
       <div className="max-w-2xl text-center space-y-6">
         {/* Icon */}
         <div className="relative inline-block">
-          <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-          <div className="relative bg-gradient-to-br from-primary/20 to-primary/10 p-6 rounded-full">
-            <Sparkles className="h-16 w-16 text-primary" />
+          <div className="absolute inset-0 bg-blue-500/30 rounded-full blur-2xl animate-pulse" />
+          <div className="relative bg-gradient-to-br from-blue-500/20 to-blue-600/10 p-6 rounded-full border border-blue-500/20">
+            <Sparkles className="h-16 w-16 text-blue-400" />
           </div>
         </div>
 
         {/* Title */}
         <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-foreground">
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
             No Dashboard Yet
           </h3>
           <p className="text-muted-foreground">
@@ -24,35 +24,35 @@ export function EmptyState() {
         </div>
 
         {/* Instructions */}
-        <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-dashed border-border">
+        <Card className="p-6 bg-gradient-to-br from-card to-secondary/30 backdrop-blur-sm border-2 border-dashed border-blue-500/30">
           <div className="space-y-4 text-left">
             <h4 className="font-semibold text-foreground flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
+              <Zap className="h-4 w-4 text-blue-400" />
               How to get started:
             </h4>
             <ol className="space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-3">
-                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs">
+                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 font-semibold text-xs border border-blue-500/30">
                   1
                 </span>
                 <span>
-                  <strong className="text-foreground">Enter or upload</strong> your markdown research content in the left panel
+                  <strong className="text-blue-300">Enter or upload</strong> your markdown research content in the left panel
                 </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs">
+                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 font-semibold text-xs border border-blue-500/30">
                   2
                 </span>
                 <span>
-                  <strong className="text-foreground">Click "Generate Dashboard"</strong> to start the AI analysis
+                  <strong className="text-blue-300">Click "Generate Dashboard"</strong> to start the AI analysis
                 </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs">
+                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-500/20 text-blue-400 font-semibold text-xs border border-blue-500/30">
                   3
                 </span>
                 <span>
-                  <strong className="text-foreground">Watch</strong> as your content transforms into interactive components
+                  <strong className="text-blue-300">Watch</strong> as your content transforms into interactive components
                 </span>
               </li>
             </ol>
@@ -60,9 +60,9 @@ export function EmptyState() {
         </Card>
 
         {/* Example Markdown Hint */}
-        <Card className="p-4 bg-muted/50">
+        <Card className="p-4 bg-gradient-to-r from-secondary/50 to-muted/30 border-blue-500/20">
           <div className="flex items-start gap-3 text-left">
-            <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <FileText className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">
                 Example Content

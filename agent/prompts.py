@@ -316,43 +316,68 @@ Your task is to select and configure the OPTIMAL set of A2UI components to repre
 - **PricingTable**: Pricing tiers, subscription plans
 
 ### Layout Components
-- **Section**: Group related components with optional title
-- **Grid**: Responsive grid layout (2-4 columns)
-- **Columns**: Side-by-side column layout
-- **Tabs**: Tabbed interface for categorized content
-- **Accordion**: Collapsible sections for lengthy content
-- **Carousel**: Swipeable carousel for media/cards
-- **Sidebar**: Side panel for navigation or supplementary content
+- **Section**: Group related components with optional title (use sparingly for major content groups)
 
 ### Tagging Components
-- **Tag**: Single tag/label for categorization
-- **TagGroup**: Group of related tags
-- **Badge**: Status badge, count badge, notification
-- **CategoryLabel**: Category/section labels
+- **TagCloud**: Collection of related tags with optional counts and sizing
+- **CategoryBadge**: Category label with optional icon and color
+- **StatusIndicator**: Status with colored dot indicator (active, inactive, pending, error)
+- **PriorityBadge**: Priority level badge (low, medium, high, critical)
+- **DifficultyBadge**: Difficulty level badge (beginner, intermediate, advanced, expert)
 
-## VARIETY ENFORCEMENT RULES (CRITICAL)
+## COMPREHENSIVE COVERAGE RULES (CRITICAL)
 
-You MUST follow these rules to ensure component diversity:
+You MUST follow these rules to ensure thorough content representation:
 
-### Rule 1: Minimum Component Type Diversity
+### Rule 1: Cover ALL Major Content Sections
+- **Generate a component for EVERY major section/topic in the document**
+- If document has 10 items/topics, generate components for ALL 10, not just 2-3
+- Each heading, list item, or distinct concept deserves its own component
+- For lists of items (e.g., "10 content ideas"), create a RankedItem or Card for EACH item
+- Minimum: Generate 1 component per major section + summary components
+
+### Rule 2: Scale With Document Size
+- Short documents (< 500 words): 5-8 components
+- Medium documents (500-2000 words): 10-15 components
+- Long documents (2000+ words): 15-25 components
+- Lists with N items: Generate N individual components for the items + summary components
+
+### Rule 3: Minimum Component Type Diversity
 - **Generate at least 4 DIFFERENT component types** in your selection
 - Do NOT create 10 components of only 2-3 types
 - Mix structural, data, media, and interactive components
 
-### Rule 2: No Consecutive Repetition
+### Rule 4: No Consecutive Repetition
 - **Never place 3+ components of the same type consecutively**
 - If you need multiple StatCards, intersperse them with other components
 - Break up patterns with different component types
 
-### Rule 3: Balanced Distribution
+### Rule 5: Balanced Distribution
 - Aim for 2-4 instances of your most-used component type
 - Include 1-2 instances of several other component types
 - Avoid having one component type dominate (>50% of components)
 
-### Rule 4: Layout Container Usage
-- Use Section, Grid, Columns, or Tabs to GROUP components logically
-- Don't just list components linearly - organize them hierarchically
-- Each major content section should be wrapped in a layout component
+### Rule 6: Width Hints
+For each component, you may suggest a `width_hint` in the props to control layout:
+- **"full"**: Spans entire width - use for code blocks, tables, summaries, executive content
+- **"half"**: Half width (2 columns on desktop) - use for callouts, key points, quotes
+- **"third"**: Third width (3 columns on desktop) - use for stat cards, link cards, repo cards
+- **"quarter"**: Small items - use for badges, tags
+
+Default widths are applied if not specified, but you can override for visual balance.
+Group similar-width components together when possible.
+
+### Rule 7: Semantic Zones (IMPORTANT)
+Assign each component to a semantic zone for intelligent layout:
+- **"hero"**: Top of page, full-width prominent content. Use for: TLDR, ExecutiveSummary, main headline
+- **"metrics"**: Key statistics and data. Use for: StatCard, TrendIndicator, MetricRow, ProgressRing
+- **"insights"**: Main content area. Use for: KeyTakeaways, CalloutCard, QuoteCard, ExpertTip, RankedItem
+- **"content"**: Primary detailed content. Use for: CodeBlock, DataTable, StepCard, ChecklistItem, ProConItem
+- **"media"**: Videos, images, embeds. Use for: VideoCard, ImageCard, PlaylistCard, PodcastCard
+- **"resources"**: Links and references. Use for: LinkCard, ToolCard, BookCard, RepoCard
+- **"tags"**: Categories and labels. Use for: TagCloud, CategoryBadge, StatusIndicator
+
+Components in the same zone will be grouped together visually. Use zones to create a clear visual hierarchy.
 
 ## Component Selection Strategy
 
@@ -392,62 +417,79 @@ Return a JSON array of component specifications:
     {{
       "component_type": "TLDR",
       "priority": "high",
+      "zone": "hero",
       "data_source": "summary of first 2-3 paragraphs",
       "props": {{
         "content": "Brief TL;DR summary text",
-        "max_length": 200
+        "max_length": 200,
+        "width_hint": "full"
       }},
       "rationale": "Provides quick overview at document start"
     }},
     {{
-      "component_type": "Section",
-      "priority": "high",
-      "props": {{
-        "title": "Key Metrics",
-        "children": ["stat-1", "stat-2", "stat-3"]
-      }},
-      "rationale": "Groups related statistics together"
-    }},
-    {{
       "component_type": "StatCard",
       "priority": "high",
+      "zone": "metrics",
       "data_source": "extract number from 'Market size: $196B' mention",
       "props": {{
         "value": "$196B",
         "label": "AI Market Size",
         "trend": "up",
-        "trendValue": "+23%"
+        "trendValue": "+23%",
+        "width_hint": "third"
       }},
       "rationale": "Highlights key market metric"
+    }},
+    {{
+      "component_type": "StatCard",
+      "priority": "high",
+      "zone": "metrics",
+      "props": {{
+        "value": "45%",
+        "label": "Growth Rate",
+        "trend": "up",
+        "trendValue": "+5%",
+        "width_hint": "third"
+      }},
+      "rationale": "Shows growth alongside market size"
+    }},
+    {{
+      "component_type": "KeyTakeaways",
+      "priority": "high",
+      "zone": "insights",
+      "props": {{
+        "items": ["Key point 1", "Key point 2", "Key point 3"],
+        "width_hint": "half"
+      }},
+      "rationale": "Summarizes main points"
     }}
   ],
   "variety_check": {{
-    "unique_types_count": 8,
+    "unique_types_count": 3,
     "max_consecutive_same_type": 2,
     "meets_requirements": true
-  }},
-  "layout_structure": "Section-based with Grid for cards and Accordion for detailed content"
+  }}
 }}
 ```
 
-## Example Good Selection (DIVERSE)
+## Example Good Selection (DIVERSE with ZONES)
 
 ```json
 {{
   "components": [
-    {{"component_type": "TLDR", "priority": "high"}},
-    {{"component_type": "Section", "priority": "high"}},
-    {{"component_type": "StatCard", "priority": "high"}},
-    {{"component_type": "StatCard", "priority": "medium"}},
-    {{"component_type": "CodeBlock", "priority": "high"}},
-    {{"component_type": "StepCard", "priority": "high"}},
-    {{"component_type": "CalloutCard", "priority": "medium"}},
-    {{"component_type": "CodeBlock", "priority": "medium"}},
-    {{"component_type": "LinkCard", "priority": "medium"}},
-    {{"component_type": "TableOfContents", "priority": "low"}}
+    {{"component_type": "TLDR", "zone": "hero", "priority": "high", "props": {{"width_hint": "full"}}}},
+    {{"component_type": "StatCard", "zone": "metrics", "priority": "high", "props": {{"width_hint": "third"}}}},
+    {{"component_type": "StatCard", "zone": "metrics", "priority": "high", "props": {{"width_hint": "third"}}}},
+    {{"component_type": "TrendIndicator", "zone": "metrics", "priority": "medium", "props": {{"width_hint": "third"}}}},
+    {{"component_type": "KeyTakeaways", "zone": "insights", "priority": "medium", "props": {{"width_hint": "half"}}}},
+    {{"component_type": "CalloutCard", "zone": "insights", "priority": "medium", "props": {{"width_hint": "half"}}}},
+    {{"component_type": "CodeBlock", "zone": "content", "priority": "high", "props": {{"width_hint": "full"}}}},
+    {{"component_type": "StepCard", "zone": "content", "priority": "high", "props": {{"width_hint": "full"}}}},
+    {{"component_type": "LinkCard", "zone": "resources", "priority": "medium", "props": {{"width_hint": "third"}}}},
+    {{"component_type": "RepoCard", "zone": "resources", "priority": "medium", "props": {{"width_hint": "third"}}}}
   ],
   "variety_check": {{
-    "unique_types_count": 7,
+    "unique_types_count": 8,
     "max_consecutive_same_type": 2,
     "meets_requirements": true
   }}
@@ -481,13 +523,17 @@ Return a JSON array of component specifications:
 
 ## Important Guidelines
 
-1. **Diversity First**: Aim for 6-8 different component types minimum
-2. **Break Up Patterns**: Never have more than 2 consecutive identical components
-3. **Use Layout Components**: Organize with Section, Grid, Tabs, Accordion
-4. **Match Content**: Choose components that fit the actual content structure
-5. **Provide Complete Props**: Include all necessary data for each component
-6. **Explain Data Sources**: Clearly indicate where component data comes from
-7. **Validate Variety**: Include variety_check in your response
+1. **COMPREHENSIVE COVERAGE**: Generate a component for EVERY major section, topic, or list item - do NOT skip content
+2. **Diversity First**: Aim for 6-8 different component types minimum
+3. **Break Up Patterns**: Never have more than 2 consecutive identical components
+4. **Use Width Hints**: Specify width_hint for visual balance (third for stats, full for code/tables, half for callouts)
+5. **Use Semantic Zones**: ALWAYS assign a zone to each component (hero, metrics, insights, content, media, resources, tags)
+6. **Match Content**: Choose components that fit the actual content structure
+7. **Provide Complete Props**: Include all necessary data for each component
+8. **Scale With Content**: Long documents need MORE components (15-25), not fewer
+9. **Group Similar Widths**: Place third-width cards together, full-width content in sequence
+
+IMPORTANT: If the document contains a list of 10 items, you MUST generate 10+ components covering ALL items, not just 2-3 samples.
 
 Begin your component selection now."""
 

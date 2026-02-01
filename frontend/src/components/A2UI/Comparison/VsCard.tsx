@@ -77,9 +77,9 @@ export function VsCard({
   const itemB = item_b || { name: rightItem || 'Item B', image_url: rightImage };
 
   return (
-    <Card className={`dark:bg-slate-900 ${
-      winner === 'left' ? 'border-l-4 border-l-green-500' :
-      winner === 'right' ? 'border-r-4 border-r-green-500' : ''
+    <Card className={`bg-gradient-to-br from-card to-secondary/30 border-blue-500/20 ${
+      winner === 'left' ? 'border-l-4 border-l-blue-500' :
+      winner === 'right' ? 'border-r-4 border-r-blue-500' : ''
     }`}>
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
@@ -88,18 +88,18 @@ export function VsCard({
               <img
                 src={itemA.image_url}
                 alt={itemA.name}
-                className="w-16 h-16 object-cover rounded-full mx-auto mb-2 dark:border dark:border-slate-700"
+                className="w-16 h-16 object-cover rounded-full mx-auto mb-2 border border-blue-500/30"
               />
             )}
-            <CardTitle className="text-base dark:text-slate-100">
+            <CardTitle className="text-base text-white">
               {itemA.name}
             </CardTitle>
             {winner === 'left' && (
-              <Badge className="mt-1 bg-green-500">Winner</Badge>
+              <Badge className="mt-1 bg-blue-600 hover:bg-blue-700 text-white border-0">Winner</Badge>
             )}
           </div>
 
-          <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
+          <Badge variant="outline" className="bg-blue-600 border-blue-500 text-white px-3 py-1 text-sm font-bold">
             VS
           </Badge>
 
@@ -108,14 +108,14 @@ export function VsCard({
               <img
                 src={itemB.image_url}
                 alt={itemB.name}
-                className="w-16 h-16 object-cover rounded-full mx-auto mb-2 dark:border dark:border-slate-700"
+                className="w-16 h-16 object-cover rounded-full mx-auto mb-2 border border-blue-500/30"
               />
             )}
-            <CardTitle className="text-base dark:text-slate-100">
+            <CardTitle className="text-base text-white">
               {itemB.name}
             </CardTitle>
             {winner === 'right' && (
-              <Badge className="mt-1 bg-green-500">Winner</Badge>
+              <Badge className="mt-1 bg-blue-600 hover:bg-blue-700 text-white border-0">Winner</Badge>
             )}
           </div>
         </div>
@@ -126,16 +126,16 @@ export function VsCard({
           <div className="space-y-3">
             {comparison_points.map((point: ComparisonPoint, idx: number) => (
               <div key={idx} className="grid grid-cols-3 gap-4 items-center">
-                <div className={`text-sm text-right dark:text-slate-300 ${
-                  point.winner === 'left' ? 'font-bold text-green-600 dark:text-green-400' : ''
+                <div className={`text-sm text-right text-slate-200 ${
+                  point.winner === 'left' ? 'font-bold text-blue-400' : ''
                 }`}>
                   {point.value_a}
                 </div>
-                <div className="text-xs text-center text-muted-foreground dark:text-slate-500 font-medium">
+                <div className="text-xs text-center text-blue-300 font-medium">
                   {point.metric}
                 </div>
-                <div className={`text-sm dark:text-slate-300 ${
-                  point.winner === 'right' ? 'font-bold text-green-600 dark:text-green-400' : ''
+                <div className={`text-sm text-slate-200 ${
+                  point.winner === 'right' ? 'font-bold text-blue-400' : ''
                 }`}>
                   {point.value_b}
                 </div>

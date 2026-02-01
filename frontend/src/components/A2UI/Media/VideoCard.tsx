@@ -71,7 +71,7 @@ export function VideoCard({
   const showEmbed = embed && videoId;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       {showEmbed ? (
         <div className="relative w-full pt-[56.25%]">
           <iframe
@@ -83,7 +83,7 @@ export function VideoCard({
           />
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative group">
           {thumbnail_url && (
             <img
               src={thumbnail_url}
@@ -92,25 +92,33 @@ export function VideoCard({
               loading="lazy"
             />
           )}
+          {/* Blue play button overlay */}
+          <div className="absolute inset-0 bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
+              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
           {duration && (
-            <Badge className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/70" variant="secondary">
+            <Badge className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-600 text-white border-blue-400/30">
               {duration}
             </Badge>
           )}
         </div>
       )}
       <CardHeader>
-        <CardTitle className="text-base line-clamp-2">{title}</CardTitle>
-        {platform && <CardDescription>{platform}</CardDescription>}
+        <CardTitle className="text-base line-clamp-2 text-white">{title}</CardTitle>
+        {platform && <CardDescription className="text-blue-300">{platform}</CardDescription>}
       </CardHeader>
       {description && (
         <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+          <p className="text-sm text-blue-200/80 line-clamp-2">{description}</p>
         </CardContent>
       )}
       {url && !showEmbed && (
         <CardFooter>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200">
             <a href={url} target="_blank" rel="noopener noreferrer">
               Watch Video
             </a>

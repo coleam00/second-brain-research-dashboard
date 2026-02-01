@@ -41,6 +41,12 @@ out/
 coverage/
 .pytest_cache/
 .nyc_output/
+playwright-report/
+test-results/
+
+# Screenshots and test artifacts
+.playwright-mcp/
+screenshots/
 
 # Logs
 logs/
@@ -64,3 +70,5 @@ Thumbs.db
 *.bak
 *.tmp
 .cache/
+
+temp/

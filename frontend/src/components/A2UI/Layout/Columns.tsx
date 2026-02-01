@@ -50,16 +50,28 @@ export function Columns({
       style={{ gap }}
     >
       {distribution === 'equal' ? (
-        // Equal width columns
+        // Equal width columns with subtle dividers
         childArray.map((child, index) => (
-          <div key={index} style={{ flex: 1 }}>
+          <div
+            key={index}
+            style={{ flex: 1 }}
+            className={cn(
+              index < childArray.length - 1 && 'md:border-r md:border-blue-500/10 md:pr-4'
+            )}
+          >
             {child}
           </div>
         ))
       ) : (
-        // Auto-fit columns
+        // Auto-fit columns with subtle dividers
         childArray.map((child, index) => (
-          <div key={index} style={{ flex: '0 1 auto' }}>
+          <div
+            key={index}
+            style={{ flex: '0 1 auto' }}
+            className={cn(
+              index < childArray.length - 1 && 'md:border-r md:border-blue-500/10 md:pr-4'
+            )}
+          >
             {child}
           </div>
         ))

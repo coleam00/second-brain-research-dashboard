@@ -40,13 +40,13 @@ export function ProgressRing({
   const getColorClass = () => {
     switch (color) {
       case 'success':
-        return 'text-green-500';
+        return 'text-emerald-400';
       case 'warning':
-        return 'text-yellow-500';
+        return 'text-amber-400';
       case 'danger':
-        return 'text-red-500';
+        return 'text-red-400';
       default:
-        return color ? `text-${color}-500` : 'text-primary';
+        return 'text-blue-400';
     }
   };
 
@@ -54,7 +54,7 @@ export function ProgressRing({
     <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: size, height: size }}>
         <svg
-          className="transform -rotate-90"
+          className="transform -rotate-90 drop-shadow-lg"
           width="100%"
           height="100%"
           viewBox="0 0 100 100"
@@ -67,7 +67,7 @@ export function ProgressRing({
             fill="none"
             stroke="currentColor"
             strokeWidth="8"
-            className="text-muted opacity-20"
+            className="text-secondary"
           />
           {/* Progress circle */}
           <circle
@@ -75,21 +75,28 @@ export function ProgressRing({
             cy="50"
             r={radius}
             fill="none"
-            stroke="currentColor"
+            stroke="url(#blueGradient)"
             strokeWidth="8"
             className={getColorClass()}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.5))' }}
           />
+          <defs>
+            <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#60a5fa" />
+            </linearGradient>
+          </defs>
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold dark:text-slate-100">{Math.round(percentage)}%</span>
+          <span className="text-xl font-bold text-white">{Math.round(percentage)}%</span>
         </div>
       </div>
       {label && (
-        <span className="text-sm text-muted-foreground dark:text-slate-400">{label}</span>
+        <span className="text-sm text-blue-300/70">{label}</span>
       )}
     </div>
   );

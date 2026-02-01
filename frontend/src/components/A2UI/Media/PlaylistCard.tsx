@@ -53,31 +53,39 @@ export function PlaylistCard({
   total_duration,
 }: PlaylistCardProps): React.ReactElement {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-gradient-to-br from-card to-secondary/30 border-blue-500/20 hover:border-blue-500/40 transition-colors">
       {thumbnail_url && (
-        <div className="relative">
+        <div className="relative group">
           <img
             src={thumbnail_url}
             alt={title}
             className="w-full h-40 object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 to-transparent" />
+          {/* Blue play icon overlay on hover */}
+          <div className="absolute inset-0 bg-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
+              <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
           {item_count !== undefined && (
-            <Badge className="absolute top-2 right-2 bg-black/70 hover:bg-black/70">
+            <Badge className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-600 text-white border-blue-400/30">
               {item_count} {item_count === 1 ? 'item' : 'items'}
             </Badge>
           )}
           {total_duration && (
-            <Badge className="absolute bottom-2 left-2 bg-black/70 hover:bg-black/70" variant="secondary">
+            <Badge className="absolute bottom-2 left-2 bg-blue-600 hover:bg-blue-600 text-white border-blue-400/30">
               {total_duration}
             </Badge>
           )}
         </div>
       )}
       <CardHeader>
-        <CardTitle className="text-base line-clamp-2">{title}</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base line-clamp-2 text-white">{title}</CardTitle>
+        <CardDescription className="text-blue-300">
           {platform && <span>{platform}</span>}
           {platform && creator && ' • '}
           {creator && <span>{creator}</span>}
@@ -85,12 +93,12 @@ export function PlaylistCard({
       </CardHeader>
       {description && (
         <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+          <p className="text-sm text-blue-200/80 line-clamp-2">{description}</p>
         </CardContent>
       )}
       {url && (
         <CardFooter>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200">
             <a href={url} target="_blank" rel="noopener noreferrer">
               Open Playlist
             </a>

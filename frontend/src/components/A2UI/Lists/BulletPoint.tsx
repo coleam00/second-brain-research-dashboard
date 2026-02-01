@@ -35,20 +35,20 @@ export function BulletPoint({
 }: BulletPointProps): React.ReactElement {
   const getIconColor = () => {
     if (color) return `text-${color}-500`;
-    return 'text-primary';
+    return 'text-blue-400';
   };
 
   const leftMargin = level * 1.5; // 1.5rem per level
 
   return (
     <div
-      className="flex items-start gap-2"
+      className="flex items-start gap-2 py-1"
       style={{ marginLeft: `${leftMargin}rem` }}
     >
-      <span className={`mt-1 ${getIconColor()} shrink-0`}>
+      <span className={`mt-1 ${getIconColor()} shrink-0 font-bold`}>
         {icon}
       </span>
-      <span className="text-sm flex-1">{text}</span>
+      <span className="text-sm flex-1 text-white leading-relaxed">{text}</span>
     </div>
   );
 }

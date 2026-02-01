@@ -59,14 +59,14 @@ export function ImageCard({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       {/* Image Section */}
-      <div className={`relative ${height} bg-muted`}>
+      <div className={`relative ${height} bg-blue-950/20 border-2 border-blue-500/10`}>
         {!imageError ? (
           <>
             {!imageLoaded && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
             <img
@@ -81,8 +81,8 @@ export function ImageCard({
             />
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted">
-            <div className="text-center text-muted-foreground p-4">
+          <div className="w-full h-full flex items-center justify-center bg-blue-950/20">
+            <div className="text-center text-blue-300/60 p-4">
               <svg
                 className="w-16 h-16 mx-auto mb-2 opacity-50"
                 fill="none"
@@ -105,9 +105,9 @@ export function ImageCard({
       {/* Metadata Section */}
       {(title || description || source) && (
         <CardHeader>
-          {title && <CardTitle className="text-base">{title}</CardTitle>}
+          {title && <CardTitle className="text-base text-white">{title}</CardTitle>}
           {(description || source) && (
-            <CardDescription>
+            <CardDescription className="text-blue-300">
               {description}
               {description && source && ' • '}
               {source && `Source: ${source}`}
@@ -119,7 +119,7 @@ export function ImageCard({
       {/* Footer with Link */}
       {url && (
         <CardFooter>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200">
             <a href={url} target="_blank" rel="noopener noreferrer">
               View Original
             </a>

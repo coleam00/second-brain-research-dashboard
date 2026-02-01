@@ -49,16 +49,16 @@ export function CodeBlock({
   };
 
   return (
-    <Card className="dark:bg-slate-900/50 dark:border-slate-700">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 dark:border-blue-500/20">
       {(title || copyable) && (
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
             {title && (
-              <CardDescription className="font-mono text-xs dark:text-slate-400">
+              <CardDescription className="font-mono text-xs text-blue-300">
                 {title}
               </CardDescription>
             )}
-            <Badge variant="outline" className="text-xs dark:border-slate-600 dark:text-slate-400">
+            <Badge variant="outline" className="text-xs bg-blue-500/20 border-blue-500/30 text-blue-300">
               {language}
             </Badge>
           </div>
@@ -67,7 +67,7 @@ export function CodeBlock({
               size="sm"
               variant="ghost"
               onClick={handleCopy}
-              className="h-8 px-2 text-xs dark:hover:bg-slate-800"
+              className="h-8 px-2 text-xs text-blue-300 hover:text-blue-200 hover:bg-blue-500/20"
             >
               {copied ? '✓ Copied' : 'Copy'}
             </Button>
@@ -75,8 +75,8 @@ export function CodeBlock({
         </CardHeader>
       )}
       <CardContent className="p-0">
-        <pre className="p-4 overflow-x-auto bg-muted/50 dark:bg-slate-950/50 rounded-b-lg m-0">
-          <code className={`text-sm font-mono language-${language} dark:text-slate-300`}>
+        <pre className="p-4 overflow-x-auto bg-slate-950/90 dark:bg-[#1e1e2e] rounded-b-lg m-0">
+          <code className={`text-sm font-mono language-${language} text-slate-100`}>
             {code}
           </code>
         </pre>

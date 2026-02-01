@@ -50,15 +50,15 @@ export function MetricRow({
   // Single metric mode
   if (value !== undefined && !metrics) {
     return (
-      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-        <span className="text-sm font-medium dark:text-slate-200">{label}</span>
+      <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-blue-500/10 border border-blue-500/10 hover:border-blue-500/30 transition-all duration-200">
+        <span className="text-sm font-medium text-blue-200">{label}</span>
         <div className="flex items-center gap-3">
           {previous_value !== undefined && (
-            <span className="text-xs text-muted-foreground dark:text-slate-400 line-through">
+            <span className="text-xs text-muted-foreground line-through">
               {previous_value}{unit}
             </span>
           )}
-          <span className="text-lg font-bold dark:text-slate-100">{value}{unit}</span>
+          <span className="text-lg font-bold text-white">{value}{unit}</span>
           {change_percentage !== undefined && (
             <Badge variant={change_percentage > 0 ? 'default' : 'destructive'}>
               {change_percentage > 0 ? '+' : ''}{change_percentage}%
@@ -71,15 +71,15 @@ export function MetricRow({
 
   // Multiple metrics mode
   return (
-    <div className="flex items-center gap-6 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-      {label && <span className="text-sm font-medium dark:text-slate-200 mr-2">{label}</span>}
+    <div className="flex items-center gap-6 p-3 rounded-lg bg-secondary/30 hover:bg-blue-500/10 border border-blue-500/10 hover:border-blue-500/30 transition-all duration-200">
+      {label && <span className="text-sm font-medium text-blue-200 mr-2">{label}</span>}
       <div className="flex flex-1 items-center gap-6 justify-around">
         {metrics?.map((metric: Metric, idx: number) => (
           <div key={idx} className="flex flex-col items-center gap-1">
-            <span className="text-xs text-muted-foreground dark:text-slate-400">{metric.label}</span>
-            <span className="text-lg font-bold dark:text-slate-100">
+            <span className="text-xs text-blue-300/70">{metric.label}</span>
+            <span className="text-lg font-bold text-white">
               {metric.value}
-              {metric.unit && <span className="text-sm text-muted-foreground dark:text-slate-400 ml-1">{metric.unit}</span>}
+              {metric.unit && <span className="text-sm text-blue-300/60 ml-1">{metric.unit}</span>}
             </span>
           </div>
         ))}

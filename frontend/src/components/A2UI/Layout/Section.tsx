@@ -52,21 +52,21 @@ export function Section({
   return (
     <section
       className={cn(
-        'space-y-4',
+        'space-y-4 p-6 rounded-lg bg-gradient-to-br from-slate-900/50 to-blue-950/30 border border-blue-500/20',
         !fullWidth && maxWidthClasses[maxWidth],
         !fullWidth && 'mx-auto',
         className
       )}
     >
       {(title || subtitle) && (
-        <div className="space-y-1">
+        <div className="space-y-2 border-b border-blue-500/20 pb-4">
           {title && (
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl font-bold tracking-tight text-white bg-gradient-to-r from-blue-400 to-blue-200 bg-clip-text text-transparent">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-blue-300/80">
               {subtitle}
             </p>
           )}

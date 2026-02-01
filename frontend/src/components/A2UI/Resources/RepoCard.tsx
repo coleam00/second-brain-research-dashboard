@@ -56,12 +56,12 @@ export function RepoCard({
   };
 
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <span className="text-muted-foreground shrink-0">📦</span>
+        <CardTitle className="text-base flex items-center gap-2 text-white">
+          <span className="text-blue-400 shrink-0">📦</span>
           {owner && (
-            <span className="text-sm text-muted-foreground font-normal">
+            <span className="text-sm text-blue-300/80 font-normal">
               {owner} /
             </span>
           )}
@@ -69,19 +69,19 @@ export function RepoCard({
         </CardTitle>
         <CardDescription className="flex items-center gap-3 flex-wrap">
           {language && (
-            <Badge variant="outline" className="shrink-0">
+            <Badge variant="outline" className="shrink-0 bg-blue-500/20 text-blue-300 border-blue-400/30">
               {language}
             </Badge>
           )}
           {stars !== undefined && stars !== null && (
-            <span className="text-xs flex items-center gap-1">
-              <span className="text-yellow-500">⭐</span>
+            <span className="text-xs flex items-center gap-1 text-blue-200/70">
+              <span className="text-blue-400">⭐</span>
               {formatNumber(stars)}
             </span>
           )}
           {forks !== undefined && forks !== null && (
-            <span className="text-xs flex items-center gap-1">
-              <span>🔀</span>
+            <span className="text-xs flex items-center gap-1 text-blue-200/70">
+              <span className="text-blue-400">🔀</span>
               {formatNumber(forks)}
             </span>
           )}
@@ -89,12 +89,12 @@ export function RepoCard({
       </CardHeader>
       {description && (
         <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+          <p className="text-sm text-blue-200/70 line-clamp-2">{description}</p>
         </CardContent>
       )}
       {url && (
         <CardFooter>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild variant="outline" className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:text-blue-200 hover:border-blue-400/50">
             <a href={url} target="_blank" rel="noopener noreferrer">
               View Repository
             </a>

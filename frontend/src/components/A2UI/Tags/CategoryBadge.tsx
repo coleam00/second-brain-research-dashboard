@@ -11,18 +11,18 @@ import { X } from 'lucide-react';
 
 export type CategorySize = 'sm' | 'md' | 'lg';
 
-/** Predefined category color schemes */
+/** Predefined category color schemes - Modern dark blue theme */
 const CATEGORY_COLORS: Record<string, string> = {
-  tech: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/30 dark:text-blue-300 border-blue-500/50',
-  science: 'bg-purple-500/20 text-purple-700 dark:bg-purple-500/30 dark:text-purple-300 border-purple-500/50',
-  business: 'bg-green-500/20 text-green-700 dark:bg-green-500/30 dark:text-green-300 border-green-500/50',
-  health: 'bg-red-500/20 text-red-700 dark:bg-red-500/30 dark:text-red-300 border-red-500/50',
-  education: 'bg-yellow-500/20 text-yellow-700 dark:bg-yellow-500/30 dark:text-yellow-300 border-yellow-500/50',
-  entertainment: 'bg-pink-500/20 text-pink-700 dark:bg-pink-500/30 dark:text-pink-300 border-pink-500/50',
-  sports: 'bg-orange-500/20 text-orange-700 dark:bg-orange-500/30 dark:text-orange-300 border-orange-500/50',
-  politics: 'bg-indigo-500/20 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-300 border-indigo-500/50',
-  finance: 'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-500/30 dark:text-emerald-300 border-emerald-500/50',
-  lifestyle: 'bg-cyan-500/20 text-cyan-700 dark:bg-cyan-500/30 dark:text-cyan-300 border-cyan-500/50',
+  tech: 'bg-blue-950/60 text-blue-100 border-blue-500/40',
+  science: 'bg-blue-900/50 text-blue-200 border-blue-400/30',
+  business: 'bg-blue-900/60 text-blue-100 border-blue-500/30',
+  health: 'bg-blue-950/50 text-blue-200 border-blue-400/40',
+  education: 'bg-blue-900/50 text-blue-100 border-blue-500/30',
+  entertainment: 'bg-blue-950/60 text-blue-200 border-blue-400/30',
+  sports: 'bg-blue-900/60 text-blue-100 border-blue-500/40',
+  politics: 'bg-blue-950/50 text-blue-200 border-blue-400/30',
+  finance: 'bg-blue-900/50 text-blue-100 border-blue-500/30',
+  lifestyle: 'bg-blue-950/60 text-blue-200 border-blue-400/40',
 };
 
 export interface CategoryBadgeProps {
@@ -61,7 +61,7 @@ export function CategoryBadge({
 }: CategoryBadgeProps): React.ReactElement {
   // Get color from predefined schemes or use custom
   const categoryKey = category.toLowerCase();
-  const badgeColor = color || CATEGORY_COLORS[categoryKey] || 'bg-slate-500/20 text-slate-700 dark:bg-slate-500/30 dark:text-slate-300 border-slate-500/50';
+  const badgeColor = color || CATEGORY_COLORS[categoryKey] || 'bg-blue-950/50 text-blue-200 border-blue-500/30';
 
   // Size classes
   const sizeClasses = {
@@ -93,7 +93,7 @@ export function CategoryBadge({
             e.stopPropagation();
             onRemove?.();
           }}
-          className="ml-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
+          className="ml-0.5 hover:bg-blue-400/20 rounded-full p-0.5 transition-colors"
           aria-label="Remove category"
         >
           <X className="w-3 h-3" />

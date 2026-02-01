@@ -41,20 +41,20 @@ export function StepCard({
 }: StepCardProps): React.ReactElement {
   const getStatusColor = () => {
     if (status === 'complete') return 'bg-green-500 dark:bg-green-600';
-    if (status === 'active') return 'bg-blue-500 dark:bg-blue-600';
-    return 'bg-gray-400 dark:bg-gray-600';
+    if (status === 'active') return 'bg-blue-500 dark:bg-blue-500';
+    return 'bg-blue-400/50 dark:bg-blue-400/50';
   };
 
   const getStatusBadge = () => {
     if (status === 'complete') return { variant: 'default' as const, text: 'Complete', color: 'bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400' };
-    if (status === 'active') return { variant: 'default' as const, text: 'Active', color: 'bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' };
-    return { variant: 'secondary' as const, text: 'Pending', color: 'bg-gray-500/10 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400' };
+    if (status === 'active') return { variant: 'default' as const, text: 'Active', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' };
+    return { variant: 'secondary' as const, text: 'Pending', color: 'bg-blue-500/10 text-blue-300 border-blue-500/20' };
   };
 
   const statusBadge = getStatusBadge();
 
   return (
-    <Card className={`dark:bg-slate-900/50 dark:border-slate-700 ${status === 'active' ? 'border-blue-500 dark:border-blue-500' : ''}`}>
+    <Card className={`bg-gradient-to-br from-card to-secondary/30 dark:border-blue-500/20 ${status === 'active' ? 'border-blue-500/50 dark:border-blue-500/50' : ''}`}>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1">
@@ -62,7 +62,7 @@ export function StepCard({
               {status === 'complete' ? '✓' : stepNumber}
             </div>
             <div className="flex-1">
-              <CardTitle className="text-base flex items-center gap-2 dark:text-slate-100">
+              <CardTitle className="text-base flex items-center gap-2 text-white">
                 {icon && <span>{icon}</span>}
                 {title}
               </CardTitle>
@@ -74,7 +74,7 @@ export function StepCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground dark:text-slate-400 ml-[52px]">{description}</p>
+        <p className="text-sm text-slate-300 ml-[52px]">{description}</p>
       </CardContent>
     </Card>
   );

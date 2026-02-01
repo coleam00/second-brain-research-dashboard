@@ -105,7 +105,7 @@ export function Carousel({
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm"
+            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/90 backdrop-blur-sm border-blue-500/30 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-400 transition-all shadow-lg shadow-blue-500/20"
             onClick={handlePrev}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -113,7 +113,7 @@ export function Carousel({
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/90 backdrop-blur-sm border-blue-500/30 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-400 transition-all shadow-lg shadow-blue-500/20"
             onClick={handleNext}
           >
             <ChevronRight className="h-4 w-4" />
@@ -129,10 +129,10 @@ export function Carousel({
               key={index}
               onClick={() => scrollToIndex(index)}
               className={cn(
-                'w-2 h-2 rounded-full transition-all',
+                'h-2 rounded-full transition-all',
                 index === currentIndex
-                  ? 'bg-primary w-4'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-400 w-8 shadow-lg shadow-blue-500/50'
+                  : 'bg-blue-500/20 w-2 hover:bg-blue-500/40'
               )}
               aria-label={`Go to slide ${index + 1}`}
             />

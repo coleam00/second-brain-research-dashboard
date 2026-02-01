@@ -8,7 +8,7 @@ documents into generative UI dashboards using Claude Sonnet 4 via OpenRouter.
 import os
 from typing import Any
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 
 
@@ -50,7 +50,7 @@ def create_openrouter_model(model_name: str, api_key: str) -> OpenAIModel:
     Create an OpenRouter model instance configured for Claude Sonnet 4.
 
     OpenRouter uses OpenAI-compatible API, so we use OpenAIModel from Pydantic AI
-    with OpenRouter's base URL.
+    with the 'openrouter' provider.
 
     Args:
         model_name: The OpenRouter model identifier (e.g., "anthropic/claude-sonnet-4")
@@ -59,11 +59,9 @@ def create_openrouter_model(model_name: str, api_key: str) -> OpenAIModel:
     Returns:
         Configured OpenAIModel instance
     """
-    return OpenAIModel(
-        model_name,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=api_key,
-    )
+    # Set the API key in environment for the provider to pick up
+    os.environ["OPENROUTER_API_KEY"] = api_key
+    return OpenAIModel(model_name, provider='openrouter')
 
 
 # Create the agent instance
@@ -96,7 +94,7 @@ def create_agent() -> Agent[AgentState, str]:
     agent_instance = Agent(
         model=model,
         deps_type=AgentState,
-        result_type=str,
+        output_type=str,
         system_prompt=(
             "You are a specialized AI assistant that analyzes Markdown research documents "
             "and transforms them into structured dashboard layouts. Your role is to:\n"
@@ -112,7 +110,7 @@ def create_agent() -> Agent[AgentState, str]:
 
     # Register tools
     @agent_instance.tool
-    async def analyze_content_type(ctx: Any, markdown_content: str) -> str:
+    async def analyze_content_type(ctx: RunContext[AgentState], markdown_content: str) -> str:
         """
         Analyze the Markdown content to determine its type.
 
@@ -148,7 +146,7 @@ def create_agent() -> Agent[AgentState, str]:
         return f"Content classified as: {content_type}"
 
     @agent_instance.tool
-    async def extract_components(ctx: Any, markdown_content: str) -> dict[str, Any]:
+    async def extract_components(ctx: RunContext[AgentState], markdown_content: str) -> dict[str, Any]:
         """
         Extract key components from the Markdown content.
 

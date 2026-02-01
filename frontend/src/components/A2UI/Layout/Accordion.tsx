@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 export interface AccordionItemData {
   /** Display label for the accordion item */
@@ -53,12 +54,20 @@ export function Accordion({
     <ShadcnAccordion
       type={multiple ? "multiple" : "single"}
       collapsible={allowEmpty}
-      className={className}
+      className={cn('bg-slate-900/30 rounded-lg border border-blue-500/20', className)}
     >
       {items.map((item, index) => (
-        <AccordionItem key={index} value={`item-${index}`}>
-          <AccordionTrigger>{item.label}</AccordionTrigger>
-          <AccordionContent>{item.content}</AccordionContent>
+        <AccordionItem
+          key={index}
+          value={`item-${index}`}
+          className="border-b border-blue-500/10 last:border-0"
+        >
+          <AccordionTrigger className="px-4 text-white hover:text-blue-200 hover:no-underline hover:bg-blue-500/10 transition-colors [&>svg]:text-blue-400">
+            {item.label}
+          </AccordionTrigger>
+          <AccordionContent className="px-4 text-blue-100/80">
+            {item.content}
+          </AccordionContent>
         </AccordionItem>
       ))}
     </ShadcnAccordion>

@@ -60,7 +60,7 @@ export function Sidebar({
           'md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-2rem)] md:overflow-y-auto'
         )}
       >
-        <div className="p-4 bg-muted/30 rounded-lg">
+        <div className="p-4 bg-gradient-to-br from-slate-900/80 to-blue-950/50 rounded-lg border border-blue-500/20 backdrop-blur-sm">
           {sidebar}
         </div>
       </aside>

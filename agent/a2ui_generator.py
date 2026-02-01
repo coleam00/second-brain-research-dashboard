@@ -67,6 +67,16 @@ class A2UIComponent(BaseModel):
         description="Child component IDs (for layout components) or nested structure (for tabs/accordion)"
     )
 
+    layout: dict[str, str] | None = Field(
+        default=None,
+        description="Layout hints for positioning: width ('full', 'half', 'third', 'quarter'), priority ('high', 'medium', 'low')"
+    )
+
+    zone: str | None = Field(
+        default=None,
+        description="Semantic zone for grouping: 'hero', 'metrics', 'insights', 'content', 'media', 'resources', 'tags'"
+    )
+
     @field_validator('type')
     @classmethod
     def validate_type(cls, v: str) -> str:
@@ -227,7 +237,8 @@ def generate_component(
     component_type: str,
     props: dict[str, Any],
     component_id: str | None = None,
-    children: list[str] | dict[str, list[str]] | None = None
+    children: list[str] | dict[str, list[str]] | None = None,
+    layout: dict[str, str] | None = None
 ) -> A2UIComponent:
     """
     Generate a base A2UI component with validation.
@@ -240,6 +251,7 @@ def generate_component(
         props: Component properties dictionary
         component_id: Optional custom ID (auto-generated if not provided)
         children: Optional child component IDs for layout components
+        layout: Optional layout hints (width, priority)
 
     Returns:
         A2UIComponent instance ready for emission
@@ -251,7 +263,8 @@ def generate_component(
     Examples:
         >>> component = generate_component(
         ...     "a2ui.StatCard",
-        ...     {"value": "$196B", "label": "Market Size", "trend": "up"}
+        ...     {"value": "$196B", "label": "Market Size", "trend": "up"},
+        ...     layout={"width": "third"}
         ... )
         >>> component.type
         "a2ui.StatCard"
@@ -274,7 +287,8 @@ def generate_component(
         type=component_type,
         id=component_id,
         props=props,
-        children=children
+        children=children,
+        layout=layout
     )
 
     return component

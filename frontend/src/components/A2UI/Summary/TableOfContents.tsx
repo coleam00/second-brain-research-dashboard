@@ -59,9 +59,9 @@ export function TableOfContents({
   };
 
   return (
-    <Card className="dark:bg-slate-900 dark:border-slate-800">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
-        <CardTitle className="text-base dark:text-slate-100">{title}</CardTitle>
+        <CardTitle className="text-base text-blue-300">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <nav>
@@ -70,16 +70,16 @@ export function TableOfContents({
               <li
                 key={idx}
                 style={{ marginLeft: getIndentation(item.level) }}
-                className="flex items-start justify-between gap-2"
+                className="flex items-start justify-between gap-2 group"
               >
                 <a
                   href={getAnchor(item)}
-                  className="text-sm hover:underline text-primary dark:text-blue-400 flex-1 leading-relaxed"
+                  className="text-sm text-blue-400 hover:text-blue-300 hover:underline flex-1 leading-relaxed transition-colors relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-0 group-hover:before:h-full before:bg-blue-400 before:transition-all before:-ml-2"
                 >
                   {item.title}
                 </a>
                 {show_page_numbers && item.page !== undefined && (
-                  <span className="text-xs text-muted-foreground dark:text-slate-500 shrink-0 font-mono">
+                  <span className="text-xs text-blue-300 shrink-0 font-mono">
                     {item.page}
                   </span>
                 )}

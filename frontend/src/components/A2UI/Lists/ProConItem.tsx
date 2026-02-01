@@ -37,23 +37,24 @@ export function ProConItem({
 }: ProConItemProps): React.ReactElement {
   const isPro = type === 'pro';
 
-  const bgColor = isPro ? 'bg-green-500/10' : 'bg-red-500/10';
-  const textColor = isPro ? 'text-green-500' : 'text-red-500';
+  const bgColor = isPro ? 'bg-gradient-to-br from-emerald-500/20 to-blue-500/10' : 'bg-gradient-to-br from-red-500/20 to-secondary/30';
+  const borderColor = isPro ? 'border-emerald-500/30' : 'border-red-500/30';
+  const textColor = isPro ? 'text-emerald-400' : 'text-red-400';
   const icon = isPro ? '✓' : '✗';
 
   return (
-    <div className={`flex items-start gap-2 p-2 rounded-lg ${bgColor}`}>
-      <span className={`text-lg ${textColor} shrink-0 mt-0.5`}>
+    <div className={`flex items-start gap-2 p-3 rounded-lg ${bgColor} border ${borderColor} hover:border-opacity-60 transition-all duration-200`}>
+      <span className={`text-lg ${textColor} shrink-0 mt-0.5 font-bold`}>
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <span className="text-sm block">{label}</span>
+        <span className="text-sm block text-white font-medium">{label}</span>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs text-blue-200 mt-1">{description}</p>
         )}
       </div>
       {weight !== undefined && weight !== null && (
-        <Badge variant="secondary" className="shrink-0">
+        <Badge variant="secondary" className="shrink-0 bg-blue-500/20 text-blue-300 border-blue-500/30">
           {weight}
         </Badge>
       )}

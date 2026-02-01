@@ -40,8 +40,8 @@ export function MiniChart({
   if (!data || data.length === 0) {
     return (
       <div className="space-y-1">
-        {label && <div className="text-xs text-muted-foreground dark:text-slate-400">{label}</div>}
-        <div className="text-xs text-muted-foreground dark:text-slate-400">No data</div>
+        {label && <div className="text-xs text-blue-300/70">{label}</div>}
+        <div className="text-xs text-muted-foreground">No data</div>
       </div>
     );
   }
@@ -50,32 +50,28 @@ export function MiniChart({
   const minValue = Math.min(...data);
   const range = maxValue - minValue || 1;
 
-  const getColorClass = () => {
-    return color ? `bg-${color}-500` : 'bg-primary';
-  };
-
   const getStrokeColor = () => {
     switch (color) {
       case 'success':
-        return '#22c55e';
+        return '#34d399';
       case 'warning':
-        return '#eab308';
+        return '#fbbf24';
       case 'danger':
-        return '#ef4444';
+        return '#f87171';
       default:
-        return 'currentColor';
+        return '#60a5fa';
     }
   };
 
   const renderBarChart = () => {
     return (
-      <div className="flex items-end gap-1" style={{ height }}>
+      <div className="flex items-end gap-1 p-2 rounded-lg bg-secondary/30" style={{ height }}>
         {data.map((value: number, idx: number) => {
           const heightPercent = ((value - minValue) / range) * 100;
           return (
             <div
               key={idx}
-              className={`flex-1 ${getColorClass()} rounded-t transition-all hover:opacity-80`}
+              className="flex-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t transition-all hover:from-blue-500 hover:to-blue-300 shadow-sm shadow-blue-500/30"
               style={{ height: `${heightPercent}%`, minHeight: '2px' }}
               title={`${value}`}
             />
@@ -97,40 +93,48 @@ export function MiniChart({
     }).join(' ');
 
     return (
-      <svg width={width} height={height} className="w-full">
-        <polyline
-          points={points}
-          fill="none"
-          stroke={getStrokeColor()}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={color ? `text-${color}-500` : 'text-primary'}
-        />
-        {data.map((value, idx) => {
-          const x = padding + idx * segmentWidth;
-          const y = height - padding - ((value - minValue) / range) * (height - padding * 2);
-          return (
-            <circle
-              key={idx}
-              cx={x}
-              cy={y}
-              r="3"
-              fill={getStrokeColor()}
-              className={color ? `text-${color}-500` : 'text-primary'}
-            >
-              <title>{value}</title>
-            </circle>
-          );
-        })}
-      </svg>
+      <div className="p-2 rounded-lg bg-secondary/30">
+        <svg width={width} height={height} className="w-full">
+          <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#60a5fa" />
+            </linearGradient>
+          </defs>
+          <polyline
+            points={points}
+            fill="none"
+            stroke="url(#lineGradient)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ filter: 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.5))' }}
+          />
+          {data.map((value, idx) => {
+            const x = padding + idx * segmentWidth;
+            const y = height - padding - ((value - minValue) / range) * (height - padding * 2);
+            return (
+              <circle
+                key={idx}
+                cx={x}
+                cy={y}
+                r="3"
+                fill={getStrokeColor()}
+                style={{ filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.5))' }}
+              >
+                <title>{value}</title>
+              </circle>
+            );
+          })}
+        </svg>
+      </div>
     );
   };
 
   return (
     <div className="space-y-1">
       {label && (
-        <div className="text-xs text-muted-foreground dark:text-slate-400">{label}</div>
+        <div className="text-xs text-blue-300/70">{label}</div>
       )}
       {type === 'bar' ? renderBarChart() : renderLineChart()}
     </div>

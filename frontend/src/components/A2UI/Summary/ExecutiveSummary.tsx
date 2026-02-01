@@ -63,31 +63,31 @@ export function ExecutiveSummary({
   };
 
   return (
-    <Card className="dark:bg-slate-900 dark:border-slate-800">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
-        <CardTitle className="dark:text-slate-100">{title}</CardTitle>
+        <CardTitle className="text-blue-300">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm dark:text-slate-200">{summary}</p>
+        <p className="text-sm text-white">{summary}</p>
 
         {metrics && metrics.length > 0 && (
           <div>
-            <h4 className="font-semibold text-sm mb-3 dark:text-slate-100">Key Metrics</h4>
+            <h4 className="font-semibold text-sm mb-3 text-blue-300">Key Metrics</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {metrics.map((metric, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-lg bg-muted dark:bg-slate-800 space-y-1"
+                  className="p-3 rounded-lg bg-blue-950/30 border border-blue-500/10 space-y-1"
                 >
-                  <div className="text-xs text-muted-foreground dark:text-slate-400">
+                  <div className="text-xs text-blue-300">
                     {metric.label}
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-bold dark:text-slate-100">
+                    <span className="text-lg font-bold text-white">
                       {metric.value}
                     </span>
                     {metric.unit && (
-                      <span className="text-sm text-muted-foreground dark:text-slate-400">
+                      <span className="text-sm text-blue-200">
                         {metric.unit}
                       </span>
                     )}
@@ -101,14 +101,14 @@ export function ExecutiveSummary({
 
         {recommendations && recommendations.length > 0 && (
           <div>
-            <h4 className="font-semibold text-sm mb-2 dark:text-slate-100">Recommendations</h4>
+            <h4 className="font-semibold text-sm mb-2 text-blue-300">Recommendations</h4>
             <ul className="space-y-2">
               {recommendations.map((rec, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <Badge variant="outline" className="shrink-0 mt-0.5 dark:border-slate-700 dark:text-slate-300">
+                  <Badge variant="outline" className="shrink-0 mt-0.5 border-blue-500/30 text-blue-300 bg-blue-500/10">
                     {idx + 1}
                   </Badge>
-                  <span className="text-sm text-muted-foreground dark:text-slate-300">
+                  <span className="text-sm text-blue-100">
                     {rec}
                   </span>
                 </li>

@@ -86,17 +86,19 @@ export function TagCloud({
             key={idx}
             variant="secondary"
             className={`
-              dark:bg-slate-700
-              dark:text-slate-200
-              dark:hover:bg-slate-600
-              ${onTagClick ? 'cursor-pointer hover:bg-slate-300 transition-colors' : ''}
+              bg-blue-950/40
+              text-blue-100
+              border border-blue-500/20
+              hover:bg-blue-900/50
+              hover:border-blue-400/30
+              ${onTagClick ? 'cursor-pointer transition-all duration-200' : ''}
             `}
             style={{ fontSize: `${size}rem` }}
             onClick={() => onTagClick?.(tagName)}
           >
             {tagName}
             {tagCount !== undefined && tagCount > 1 && (
-              <span className="ml-1.5 text-xs opacity-70">
+              <span className="ml-1.5 text-xs text-blue-300/70">
                 ({tagCount})
               </span>
             )}

@@ -31,19 +31,21 @@ export function TLDR({
   icon = '⚡',
 }: TLDRProps): React.ReactElement {
   return (
-    <Card className="bg-yellow-500/10 border-yellow-500 dark:bg-yellow-500/20 dark:border-yellow-500/50">
+    <Card className="bg-gradient-to-br from-card to-secondary/30 border-blue-500/20">
       <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-2 dark:text-slate-100">
-          <span>{icon}</span> TL;DR
+        <CardTitle className="text-sm flex items-center gap-2">
+          <span className="bg-blue-500/20 px-2 py-1 rounded text-blue-300 border border-blue-500/30">
+            {icon} TL;DR
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        <p className="text-sm font-medium dark:text-slate-200">{summary}</p>
+        <p className="text-sm font-medium text-white">{summary}</p>
         {key_points && key_points.length > 0 && (
           <ul className="space-y-1 mt-2">
             {key_points.map((point: string, idx: number) => (
-              <li key={idx} className="text-sm text-muted-foreground dark:text-slate-400 flex gap-2">
-                <span>•</span>
+              <li key={idx} className="text-sm text-blue-200 flex gap-2">
+                <span className="text-blue-400">•</span>
                 <span>{point}</span>
               </li>
             ))}

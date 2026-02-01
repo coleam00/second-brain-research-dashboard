@@ -1,85 +1,106 @@
 /**
  * ComparisonBar Component
  *
- * Displays horizontal bars comparing two values side-by-side.
+ * Displays horizontal bars comparing multiple values.
  * Auto-scales to the maximum value and shows labels for each bar.
  */
 
 import React from 'react';
 
+interface ComparisonItem {
+  label: string;
+  value: number;
+  color?: string;
+}
+
 export interface ComparisonBarProps {
   /** Main label for the comparison */
   label: string;
 
-  /** First value to compare */
-  value_a: number;
+  /** Array of items to compare (from backend) */
+  items?: ComparisonItem[];
 
-  /** Second value to compare */
-  value_b: number;
-
-  /** Label for first value */
-  label_a: string;
-
-  /** Label for second value */
-  label_b: string;
-
-  /** Optional maximum value for scaling (defaults to max of both values) */
+  /** Optional maximum value for scaling (accepts both snake_case and camelCase) */
   max_value?: number;
+  maxValue?: number;
 
-  /** Optional color for first bar (defaults to blue) */
-  color_a?: string;
-
-  /** Optional color for second bar (defaults to purple) */
-  color_b?: string;
+  // Legacy props for two-value comparison
+  /** First value to compare (legacy) */
+  value_a?: number;
+  /** Second value to compare (legacy) */
+  value_b?: number;
+  /** Label for first value (legacy) */
+  label_a?: string;
+  /** Label for second value (legacy) */
+  label_b?: string;
 }
+
+// Color palette for bars
+const BAR_COLORS = [
+  'from-blue-600 to-blue-400 shadow-blue-500/30',
+  'from-cyan-500 to-blue-500 shadow-cyan-500/30',
+  'from-purple-500 to-blue-500 shadow-purple-500/30',
+  'from-teal-500 to-cyan-500 shadow-teal-500/30',
+  'from-indigo-500 to-blue-500 shadow-indigo-500/30',
+];
 
 /**
  * ComparisonBar Component
  *
- * A horizontal bar chart component for comparing two values
+ * A horizontal bar chart component for comparing values
  * with automatic scaling and customizable colors.
  */
 export function ComparisonBar({
   label,
+  items,
+  max_value,
+  maxValue,
   value_a,
   value_b,
   label_a,
   label_b,
-  max_value,
-  color_a = 'blue',
-  color_b = 'purple',
 }: ComparisonBarProps): React.ReactElement {
-  const maxVal = max_value || Math.max(value_a, value_b);
-  const percentA = (value_a / maxVal) * 100;
-  const percentB = (value_b / maxVal) * 100;
+  // Support both items array (backend) and legacy two-value format
+  const displayItems: ComparisonItem[] = items && items.length > 0
+    ? items
+    : [
+        ...(value_a !== undefined && label_a ? [{ label: label_a, value: value_a }] : []),
+        ...(value_b !== undefined && label_b ? [{ label: label_b, value: value_b }] : []),
+      ];
+
+  // Calculate max value
+  const calculatedMax = max_value || maxValue || Math.max(...displayItems.map(item => item.value), 1);
+
+  if (displayItems.length === 0) {
+    return (
+      <div className="p-4 rounded-xl bg-secondary/30 border border-blue-500/10">
+        <div className="text-sm text-blue-300/70">No data to display</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-2">
-      <div className="text-sm font-medium dark:text-slate-200">{label}</div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs w-20 text-right text-muted-foreground dark:text-slate-400">
-          {label_a}
-        </span>
-        <div className="flex-1 h-6 bg-muted dark:bg-slate-800 rounded-full overflow-hidden flex">
-          <div
-            className={`bg-${color_a}-500 h-full transition-all`}
-            style={{ width: `${percentA}%` }}
-          />
-        </div>
-        <span className="text-xs w-12 font-semibold dark:text-slate-100">{value_a}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs w-20 text-right text-muted-foreground dark:text-slate-400">
-          {label_b}
-        </span>
-        <div className="flex-1 h-6 bg-muted dark:bg-slate-800 rounded-full overflow-hidden flex">
-          <div
-            className={`bg-${color_b}-500 h-full transition-all`}
-            style={{ width: `${percentB}%` }}
-          />
-        </div>
-        <span className="text-xs w-12 font-semibold dark:text-slate-100">{value_b}</span>
-      </div>
+    <div className="space-y-3 p-4 rounded-xl bg-secondary/30 border border-blue-500/10">
+      <div className="text-sm font-medium text-blue-200">{label}</div>
+      {displayItems.map((item, index) => {
+        const percent = (item.value / calculatedMax) * 100;
+        const colorClass = BAR_COLORS[index % BAR_COLORS.length];
+
+        return (
+          <div key={item.label || index} className="flex items-center gap-2">
+            <span className="text-xs w-24 text-right text-blue-300/70 truncate" title={item.label}>
+              {item.label}
+            </span>
+            <div className="flex-1 h-6 bg-secondary rounded-full overflow-hidden flex">
+              <div
+                className={`bg-gradient-to-r ${colorClass} h-full transition-all duration-500 shadow-lg`}
+                style={{ width: `${Math.min(percent, 100)}%` }}
+              />
+            </div>
+            <span className="text-xs w-14 font-semibold text-white text-right">{item.value}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

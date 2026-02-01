@@ -36,32 +36,32 @@ export function CalloutCard({
 }: CalloutCardProps): React.ReactElement {
   const typeConfig = {
     tip: {
-      bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-      borderColor: 'border-blue-500 dark:border-blue-500/50',
+      bgColor: 'bg-gradient-to-br from-card to-secondary/30',
+      borderColor: 'border-l-4 border-blue-500 dark:border-blue-500/70',
       icon: '💡',
-      iconBg: 'bg-blue-500/20 dark:bg-blue-500/30',
-      titleColor: 'text-blue-700 dark:text-blue-400',
+      iconBg: 'bg-blue-500/30 dark:bg-blue-500/40',
+      titleColor: 'text-blue-300',
     },
     warning: {
-      bgColor: 'bg-yellow-500/10 dark:bg-yellow-500/20',
-      borderColor: 'border-yellow-500 dark:border-yellow-500/50',
+      bgColor: 'bg-gradient-to-br from-card to-secondary/30',
+      borderColor: 'border-l-4 border-yellow-500 dark:border-yellow-500/70',
       icon: '⚠️',
-      iconBg: 'bg-yellow-500/20 dark:bg-yellow-500/30',
-      titleColor: 'text-yellow-700 dark:text-yellow-400',
+      iconBg: 'bg-yellow-500/30 dark:bg-yellow-500/40',
+      titleColor: 'text-yellow-300',
     },
     info: {
-      bgColor: 'bg-cyan-500/10 dark:bg-cyan-500/20',
-      borderColor: 'border-cyan-500 dark:border-cyan-500/50',
+      bgColor: 'bg-gradient-to-br from-card to-secondary/30',
+      borderColor: 'border-l-4 border-blue-400 dark:border-blue-400/70',
       icon: 'ℹ️',
-      iconBg: 'bg-cyan-500/20 dark:bg-cyan-500/30',
-      titleColor: 'text-cyan-700 dark:text-cyan-400',
+      iconBg: 'bg-blue-400/30 dark:bg-blue-400/40',
+      titleColor: 'text-blue-200',
     },
     danger: {
-      bgColor: 'bg-red-500/10 dark:bg-red-500/20',
-      borderColor: 'border-red-500 dark:border-red-500/50',
+      bgColor: 'bg-gradient-to-br from-card to-secondary/30',
+      borderColor: 'border-l-4 border-red-500 dark:border-red-500/70',
       icon: '🚨',
-      iconBg: 'bg-red-500/20 dark:bg-red-500/30',
-      titleColor: 'text-red-700 dark:text-red-400',
+      iconBg: 'bg-red-500/30 dark:bg-red-500/40',
+      titleColor: 'text-red-300',
     },
   };
 
@@ -69,7 +69,7 @@ export function CalloutCard({
   const displayIcon = icon || config.icon;
 
   return (
-    <Card className={`${config.bgColor} ${config.borderColor}`}>
+    <Card className={`${config.bgColor} ${config.borderColor} dark:border-blue-500/20`}>
       <CardContent className="pt-6">
         <div className="flex items-start gap-3">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full ${config.iconBg} shrink-0`}>
@@ -77,7 +77,7 @@ export function CalloutCard({
           </div>
           <div className="flex-1 space-y-1">
             <div className={`font-semibold ${config.titleColor}`}>{title}</div>
-            <p className="text-sm dark:text-slate-300">{content}</p>
+            <p className="text-sm text-slate-200">{content}</p>
           </div>
         </div>
       </CardContent>

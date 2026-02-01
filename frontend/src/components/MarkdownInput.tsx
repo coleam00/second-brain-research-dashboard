@@ -9,15 +9,24 @@ interface MarkdownInputProps {
   onGenerate?: (content: string, file?: File) => void
   placeholder?: string
   className?: string
+  initialValue?: string
 }
 
 export function MarkdownInput({
   onGenerate,
   placeholder = "Enter your markdown content or drag and drop a file...",
-  className
+  className,
+  initialValue = ""
 }: MarkdownInputProps) {
-  const [content, setContent] = React.useState("")
+  const [content, setContent] = React.useState(initialValue)
   const [isDragging, setIsDragging] = React.useState(false)
+
+  // Update content when initialValue changes (e.g., when going back to input view)
+  React.useEffect(() => {
+    if (initialValue) {
+      setContent(initialValue)
+    }
+  }, [initialValue])
   const [uploadedFile, setUploadedFile] = React.useState<File | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -96,10 +105,10 @@ export function MarkdownInput({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "relative rounded-lg border-2 border-dashed transition-colors",
+          "relative rounded-xl border-2 border-dashed transition-all duration-300",
           isDragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 bg-background"
+            ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+            : "border-blue-500/30 bg-secondary/30 hover:border-blue-500/50"
         )}
       >
         <div className="p-6">
@@ -107,9 +116,9 @@ export function MarkdownInput({
             {/* File Upload Section */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Upload className="h-5 w-5 text-muted-foreground" />
+                <Upload className="h-5 w-5 text-blue-400" />
                 <span className="text-sm text-muted-foreground">
-                  {uploadedFile ? uploadedFile.name : "Drag and drop a file or click to upload"}
+                  {uploadedFile ? <span className="text-blue-300">{uploadedFile.name}</span> : "Drag and drop a file or click to upload"}
                 </span>
               </div>
               <input
@@ -142,7 +151,7 @@ export function MarkdownInput({
                     variant="outline"
                     size="sm"
                     onClick={() => loadSampleDocument(doc.id)}
-                    className="flex flex-col items-center justify-center h-auto py-3 px-2 gap-1 hover:bg-primary/10 hover:border-primary transition-colors"
+                    className="flex flex-col items-center justify-center h-auto py-3 px-2 gap-1 bg-secondary/50 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/50 hover:shadow-md hover:shadow-blue-500/10 transition-all duration-200"
                     title={doc.description}
                   >
                     <span className="text-2xl">{doc.icon}</span>
@@ -189,10 +198,10 @@ export function MarkdownInput({
 
         {/* Drag overlay */}
         {isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20 rounded-xl backdrop-blur-sm border-2 border-blue-500">
             <div className="text-center">
-              <Upload className="h-12 w-12 mx-auto mb-2 text-primary" />
-              <p className="text-lg font-medium text-primary">Drop file here</p>
+              <Upload className="h-12 w-12 mx-auto mb-2 text-blue-400 animate-bounce" />
+              <p className="text-lg font-medium text-blue-300">Drop file here</p>
             </div>
           </div>
         )}
