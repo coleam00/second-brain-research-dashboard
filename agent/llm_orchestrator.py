@@ -41,6 +41,16 @@ from a2ui_generator import (
     generate_expert_tip,
     generate_tag,
     generate_badge,
+    # Additional component generators
+    generate_trend_indicator,
+    generate_metric_row,
+    generate_comparison_bar,
+    generate_ranked_item,
+    generate_pro_con_item,
+    generate_accordion,
+    generate_executive_summary,
+    generate_tool_card,
+    generate_book_card,
 )
 from content_analyzer import parse_markdown, ContentAnalysis, _classify_heuristic
 from prompts import (
@@ -56,6 +66,120 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# Default semantic zones for each component type
+# These are used when the LLM doesn't specify a zone
+COMPONENT_DEFAULT_ZONES = {
+    # Hero zone - prominent top-level content
+    "TLDR": "hero",
+    "ExecutiveSummary": "hero",
+
+    # Metrics zone - statistics and data
+    "StatCard": "metrics",
+    "TrendIndicator": "metrics",
+    "MetricRow": "metrics",
+    "ProgressRing": "metrics",
+    "MiniChart": "metrics",
+    "ComparisonBar": "metrics",
+
+    # Insights zone - key findings and observations
+    "KeyTakeaways": "insights",
+    "CalloutCard": "insights",
+    "QuoteCard": "insights",
+    "ExpertTip": "insights",
+    "RankedItem": "insights",
+    "HeadlineCard": "insights",
+
+    # Content zone - detailed information
+    "CodeBlock": "content",
+    "DataTable": "content",
+    "StepCard": "content",
+    "ChecklistItem": "content",
+    "ProConItem": "content",
+    "BulletPoint": "content",
+    "CommandCard": "content",
+    "TableOfContents": "content",
+    "ComparisonTable": "content",
+    "FeatureMatrix": "content",
+    "PricingTable": "content",
+    "VsCard": "content",
+    "Accordion": "content",
+    "TimelineEvent": "content",
+
+    # Media zone - multimedia content
+    "VideoCard": "media",
+    "ImageCard": "media",
+    "PlaylistCard": "media",
+    "PodcastCard": "media",
+
+    # Resources zone - links and references
+    "LinkCard": "resources",
+    "ToolCard": "resources",
+    "BookCard": "resources",
+    "RepoCard": "resources",
+    "ProfileCard": "resources",
+    "CompanyCard": "resources",
+
+    # Tags zone - categorization
+    "TagCloud": "tags",
+    "CategoryBadge": "tags",
+    "StatusIndicator": "tags",
+    "PriorityBadge": "tags",
+    "DifficultyBadge": "tags",
+    "Tag": "tags",
+    "Badge": "tags",
+
+    # Default for unknown types
+    "Section": "content",
+    "Grid": "content",
+}
+
+# Default width hints for each component type
+# These are used when the LLM doesn't specify a width_hint
+COMPONENT_DEFAULT_WIDTHS = {
+    # Full width components
+    "TLDR": "full",
+    "ExecutiveSummary": "full",
+    "CodeBlock": "full",
+    "DataTable": "full",
+    "TableOfContents": "full",
+    "Section": "full",
+    "ComparisonTable": "full",
+    "FeatureMatrix": "full",
+    "PricingTable": "full",
+
+    # Half width components
+    "KeyTakeaways": "half",
+    "QuoteCard": "half",
+    "CalloutCard": "half",
+    "VsCard": "half",
+    "ExpertTip": "half",
+    "RankedItem": "half",
+    "ProConItem": "half",
+    "ChecklistItem": "half",
+    "HeadlineCard": "half",
+
+    # Third width components (3-column grid on desktop)
+    "StatCard": "third",
+    "LinkCard": "third",
+    "RepoCard": "third",
+    "VideoCard": "third",
+    "ToolCard": "third",
+    "BookCard": "third",
+    "ProfileCard": "third",
+    "CompanyCard": "third",
+    "TrendIndicator": "third",
+    "MetricRow": "third",
+    "ImageCard": "third",
+
+    # Quarter width (small items)
+    "Badge": "quarter",
+    "Tag": "quarter",
+    "BulletPoint": "full",
+    "StepCard": "full",
+    "CommandCard": "full",
+    "TimelineEvent": "full",
+}
 
 
 async def call_llm(prompt: str, system_prompt: str = "") -> str:
@@ -241,26 +365,30 @@ Return JSON with "components" array."""
 
     if not components:
         print("[LLM] No components returned, using fallback")
-        # Fallback components
+        # Fallback components WITH explicit zones for proper grouping
         components = [
             {
                 "component_type": "TLDR",
                 "priority": "high",
+                "zone": "hero",  # Explicit zone for fallback
                 "props": {"content": content_analysis.get("title", "Document Summary"), "max_length": 200}
             },
             {
                 "component_type": "KeyTakeaways",
                 "priority": "high",
+                "zone": "insights",  # Explicit zone for fallback
                 "props": {"items": content_analysis.get("sections", ["Key point 1", "Key point 2"])[:5]}
             },
             {
                 "component_type": "CalloutCard",
                 "priority": "medium",
+                "zone": "insights",  # Explicit zone for fallback
                 "props": {"type": "info", "title": "About This Document", "content": f"Type: {content_analysis.get('document_type', 'article')}"}
             },
             {
                 "component_type": "Badge",
                 "priority": "low",
+                "zone": "tags",  # Explicit zone for fallback
                 "props": {"label": content_analysis.get("document_type", "article").title(), "count": 1}
             }
         ]
@@ -270,6 +398,114 @@ Return JSON with "components" array."""
     print(f"[LLM] Components selected: {len(components)}, unique types: {variety['unique_types_count']}")
 
     return components
+
+
+def apply_layout_and_zone(component: A2UIComponent, spec: dict) -> A2UIComponent:
+    """
+    Apply layout width hint and semantic zone to a component.
+
+    Uses the width_hint and zone from the spec if provided, otherwise falls back
+    to the defaults for the component type.
+
+    Args:
+        component: The built A2UIComponent
+        spec: Original component spec that may contain width_hint and zone
+
+    Returns:
+        Component with layout and zone fields set
+    """
+    # Get component type without 'a2ui.' prefix
+    component_type = component.type.replace("a2ui.", "")
+
+    # Check for explicit width_hint in spec
+    props = spec.get("props", {})
+    explicit_width = props.get("width_hint") or spec.get("width_hint")
+
+    # Use explicit width or fall back to default
+    width = explicit_width or COMPONENT_DEFAULT_WIDTHS.get(component_type, "full")
+
+    # Apply the layout
+    component.layout = {"width": width}
+
+    # Check for explicit zone in spec
+    explicit_zone = spec.get("zone")
+
+    # Case-insensitive lookup for zone defaults
+    # Build a lowercase mapping for robust lookups
+    zone_lookup_key = component_type
+    default_zone = COMPONENT_DEFAULT_ZONES.get(zone_lookup_key)
+
+    # If not found, try case-insensitive lookup
+    if default_zone is None:
+        lower_key = component_type.lower()
+        for key, value in COMPONENT_DEFAULT_ZONES.items():
+            if key.lower() == lower_key:
+                default_zone = value
+                print(f"[ZONE] Case-insensitive match: '{component_type}' → '{key}' → zone='{value}'")
+                break
+
+    # Final fallback to "content"
+    if default_zone is None:
+        default_zone = "content"
+        print(f"[ZONE] No default zone for '{component_type}', using 'content'")
+
+    # Use explicit zone or fall back to default
+    zone = explicit_zone or default_zone
+
+    # Debug logging for zone assignment
+    print(f"[ZONE] {component_type}: explicit_zone={explicit_zone!r}, default={default_zone}, final={zone}")
+
+    # Apply the zone
+    component.zone = zone
+
+    return component
+
+
+def expand_component_specs(specs: list[dict]) -> list[dict]:
+    """
+    Expand component specs that contain batched items into individual specs.
+
+    This handles ProConItem specs that have multiple items in an 'items' array,
+    converting them into individual specs for each item.
+
+    Args:
+        specs: List of component specifications
+
+    Returns:
+        Expanded list with batched items converted to individual specs
+    """
+    expanded = []
+
+    for spec in specs:
+        component_type = spec.get("component_type", "")
+        props = spec.get("props", {})
+
+        # Handle ProConItem with multiple items
+        if component_type == "ProConItem":
+            items = props.get("items", [])
+            item_type = props.get("type", "").lower()
+
+            if items and isinstance(items, list) and len(items) > 1:
+                is_pro = item_type in ("pro", "pros")
+                is_con = item_type in ("con", "cons")
+
+                if is_pro or is_con:
+                    # Expand each item into its own ProConItem spec
+                    for item in items:
+                        expanded.append({
+                            "component_type": "ProConItem",
+                            "priority": spec.get("priority", "medium"),
+                            "props": {
+                                "type": "pro" if is_pro else "con",
+                                "label": item,
+                            }
+                        })
+                    continue
+
+        # Keep spec as-is for all other cases
+        expanded.append(spec)
+
+    return expanded
 
 
 def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | None:
@@ -286,6 +522,61 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
     component_type = spec.get("component_type", "")
     props = spec.get("props", {})
 
+    # Normalize component type - strip whitespace
+    component_type = component_type.strip()
+
+    # Case-insensitive type mapping for robust LLM output handling
+    # Maps lowercase versions to canonical PascalCase names
+    COMPONENT_TYPE_CANONICAL = {
+        "tldr": "TLDR",
+        "keytakeaways": "KeyTakeaways",
+        "statcard": "StatCard",
+        "codeblock": "CodeBlock",
+        "stepcard": "StepCard",
+        "calloutcard": "CalloutCard",
+        "videocard": "VideoCard",
+        "repocard": "RepoCard",
+        "linkcard": "LinkCard",
+        "datatable": "DataTable",
+        "headlinecard": "HeadlineCard",
+        "tableofcontents": "TableOfContents",
+        "quotecard": "QuoteCard",
+        "checklistitem": "ChecklistItem",
+        "bulletpoint": "BulletPoint",
+        "experttip": "ExpertTip",
+        "badge": "Badge",
+        "tag": "Tag",
+        "section": "Section",
+        "comparisontable": "ComparisonTable",
+        "trendindicator": "TrendIndicator",
+        "metricrow": "MetricRow",
+        "comparisonbar": "ComparisonBar",
+        "rankeditem": "RankedItem",
+        "proconitem": "ProConItem",
+        "accordion": "Accordion",
+        "executivesummary": "ExecutiveSummary",
+        "grid": "Grid",
+        "toolcard": "ToolCard",
+        "bookcard": "BookCard",
+        "taggroup": "TagGroup",
+        "tagcloud": "TagCloud",
+        "categorybadge": "CategoryBadge",
+        "statusindicator": "StatusIndicator",
+        "prioritybadge": "PriorityBadge",
+        "difficultybadge": "DifficultyBadge",
+        "profilecard": "ProfileCard",
+        "companycard": "CompanyCard",
+    }
+
+    # Try to normalize type (handle various casing from LLM)
+    original_type = component_type
+    if component_type.lower() in COMPONENT_TYPE_CANONICAL:
+        component_type = COMPONENT_TYPE_CANONICAL[component_type.lower()]
+        if original_type != component_type:
+            print(f"[BUILD] Normalized component type: '{original_type}' → '{component_type}'")
+    elif component_type and component_type not in COMPONENT_TYPE_CANONICAL.values():
+        print(f"[BUILD] Unknown component type: '{component_type}' (will use fallback)")
+
     try:
         # Map component types to generator functions
         if component_type == "TLDR":
@@ -301,11 +592,29 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
             return generate_key_takeaways(items=items[:5])
 
         elif component_type == "StatCard":
+            # Map LLM props to generator signature: title, value, unit, change, change_type, highlight
+            change_val = props.get("trendValue", props.get("change_value", props.get("change")))
+            # Parse change value, handling string formats
+            change_float = None
+            if change_val is not None:
+                try:
+                    change_str = str(change_val).replace(",", "").replace("%", "").replace("+", "")
+                    change_float = float(change_str) if change_str else None
+                except (ValueError, TypeError):
+                    change_float = None
+
+            # Map trend to change_type (positive/negative/neutral)
+            trend = props.get("trend", "neutral")
+            change_type_map = {"up": "positive", "down": "negative", "positive": "positive", "negative": "negative"}
+            change_type = change_type_map.get(trend, "neutral")
+
             return generate_stat_card(
                 title=props.get("label", props.get("title", "Metric")),
                 value=str(props.get("value", "N/A")),
-                change_type=props.get("trend", "neutral"),
-                change_value=props.get("trendValue", props.get("change_value"))
+                unit=props.get("unit"),
+                change=change_float,
+                change_type=change_type,
+                highlight=props.get("highlight", False)
             )
 
         elif component_type == "CodeBlock":
@@ -365,11 +674,14 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
             return generate_data_table(headers=headers, rows=rows)
 
         elif component_type == "HeadlineCard":
+            # Generator signature: title, summary, source, published_at, sentiment, image_url
             return generate_headline_card(
-                headline=props.get("headline", props.get("title", "Headline")),
-                subheadline=props.get("subheadline", props.get("subtitle")),
-                source=props.get("source"),
-                timestamp=props.get("timestamp")
+                title=props.get("headline", props.get("title", "Headline")),
+                summary=props.get("subheadline", props.get("subtitle", props.get("summary", ""))),
+                source=props.get("source", "Source"),
+                published_at=props.get("timestamp", props.get("published_at", props.get("publishedAt", ""))),
+                sentiment=props.get("sentiment", "neutral"),
+                image_url=props.get("image_url", props.get("imageUrl"))
             )
 
         elif component_type == "TableOfContents":
@@ -400,9 +712,18 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
             )
 
         elif component_type == "ExpertTip":
+            # Generator signature: title, content, expert_name, difficulty, category
+            tip_content = props.get("tip", props.get("content", "Expert tip"))
+            tip_title = props.get("title", "Expert Tip")
+            # If no explicit title but we have tip content, use a truncated version as title
+            if tip_title == "Expert Tip" and tip_content and len(tip_content) > 50:
+                tip_title = tip_content[:47] + "..."
+
             return generate_expert_tip(
-                tip=props.get("tip", props.get("content", "Expert tip")),
-                expert=props.get("expert", props.get("author", "Expert")),
+                title=tip_title,
+                content=tip_content,
+                expert_name=props.get("expert", props.get("author", props.get("expert_name"))),
+                difficulty=props.get("difficulty"),
                 category=props.get("category")
             )
 
@@ -432,6 +753,280 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
             if not items or not features:
                 return None
             return generate_comparison_table(items=items, features=features)
+
+        elif component_type == "TrendIndicator":
+            # Parse value - handle commas, percentages, and plus signs
+            def parse_numeric(val, default=0):
+                if val is None:
+                    return default
+                try:
+                    val_str = str(val).replace(",", "").replace("%", "").replace("+", "").strip()
+                    return float(val_str) if val_str else default
+                except (ValueError, TypeError):
+                    return default
+
+            return generate_trend_indicator(
+                label=props.get("label", props.get("metric", "Metric")),
+                value=parse_numeric(props.get("value"), 0),
+                trend=props.get("direction", props.get("trend", "stable")),
+                change=parse_numeric(props.get("change", props.get("trendValue")), 0),
+                unit=props.get("unit", "")
+            )
+
+        elif component_type == "MetricRow":
+            # Handle both single metric and multiple metrics format
+            metrics_data = props.get("metrics", [])
+            if metrics_data and isinstance(metrics_data, list):
+                # Convert to expected format
+                metrics = []
+                for m in metrics_data:
+                    if isinstance(m, dict):
+                        metrics.append({
+                            "label": m.get("label", "Metric"),
+                            "value": m.get("value", "N/A"),
+                            "unit": m.get("unit", "")
+                        })
+                return generate_metric_row(
+                    label=props.get("title", props.get("label", "")),
+                    metrics=metrics
+                )
+            else:
+                return generate_metric_row(
+                    label=props.get("label", props.get("title", "Metric")),
+                    value=props.get("value", "N/A"),
+                    unit=props.get("unit", "")
+                )
+
+        elif component_type == "ComparisonBar":
+            # Generator signature: label, items, max_value
+            items = props.get("items", [])
+            if not items:
+                return None
+            return generate_comparison_bar(
+                label=props.get("title", props.get("label", "Comparison")),
+                items=items,
+                max_value=props.get("max_value", props.get("maxValue"))
+            )
+
+        elif component_type == "RankedItem":
+            # Map LLM props (title, description) to frontend props (label, value)
+            return generate_component("a2ui.RankedItem", {
+                "rank": props.get("rank", 1),
+                "label": props.get("title", props.get("label", "Item")),
+                "value": props.get("description", props.get("value", "")),
+                "badge": props.get("badge"),
+                "score": props.get("score")
+            })
+
+        elif component_type == "ProConItem":
+            # LLM can output two formats:
+            # 1. Individual item: {type: 'pro'|'con', label: '...', description: '...'}
+            # 2. Batch format: {type: 'pros'|'cons', items: ['item1', 'item2'], title: '...'}
+            item_type = props.get("type", "info").lower()
+            items = props.get("items", [])
+
+            # Handle batch format - return FIRST item as proper ProConItem
+            # The orchestrator loop will handle expansion for multiple items
+            if items and isinstance(items, list):
+                is_pro = item_type in ("pro", "pros")
+                is_con = item_type in ("con", "cons")
+
+                if is_pro or is_con:
+                    # Return the first item as a properly formatted ProConItem
+                    first_item = items[0] if items else "Item"
+                    return generate_component("a2ui.ProConItem", {
+                        "type": "pro" if is_pro else "con",
+                        "label": first_item,
+                        "description": props.get("title") if len(items) == 1 else None
+                    })
+
+            # Handle individual item format directly
+            if item_type in ("pro", "con"):
+                return generate_component("a2ui.ProConItem", {
+                    "type": item_type,
+                    "label": props.get("label", props.get("text", "Item")),
+                    "description": props.get("description"),
+                    "weight": props.get("weight")
+                })
+
+            # Legacy format with separate pros and cons arrays
+            pros = props.get("pros", [])
+            cons = props.get("cons", [])
+            if pros:
+                return generate_component("a2ui.ProConItem", {
+                    "type": "pro",
+                    "label": pros[0] if pros else "Advantage"
+                })
+            if cons:
+                return generate_component("a2ui.ProConItem", {
+                    "type": "con",
+                    "label": cons[0] if cons else "Disadvantage"
+                })
+
+            return None
+
+        elif component_type == "Accordion":
+            # LLM outputs sections with text content, but generate_accordion expects
+            # component IDs. Convert to a CalloutCard with formatted section list instead.
+            title = props.get("title", "Details")
+            sections = props.get("sections", props.get("items", []))
+
+            if sections:
+                # Format sections as collapsible-style text
+                formatted_sections = []
+                for section in sections[:10]:
+                    if isinstance(section, dict):
+                        sec_title = section.get("title", "Section")
+                        sec_content = section.get("content", "")
+                        formatted_sections.append(f"**{sec_title}**: {sec_content}")
+                    else:
+                        formatted_sections.append(str(section))
+
+                return generate_callout_card(
+                    type="info",
+                    title=title,
+                    content="\n\n".join(formatted_sections)
+                )
+            return None
+
+        elif component_type == "ExecutiveSummary":
+            # Extract key_metrics (dict) and recommendations (list) from LLM props
+            # The LLM may use various prop names, so we handle multiple formats
+            key_metrics = props.get("key_metrics", props.get("metrics", props.get("keyMetrics")))
+
+            # Recommendations can come from highlights, key_points, or recommendations
+            recommendations = props.get("recommendations", props.get("highlights", props.get("key_points")))
+            # Ensure recommendations is a list (may be None)
+            if recommendations and not isinstance(recommendations, list):
+                recommendations = [recommendations] if isinstance(recommendations, str) else None
+
+            return generate_executive_summary(
+                title=props.get("title", "Executive Summary"),
+                summary=props.get("summary", props.get("content", "Summary content")),
+                key_metrics=key_metrics,
+                recommendations=recommendations
+            )
+
+        elif component_type == "Grid":
+            # Grid component expects child component IDs, not text
+            # For now, convert to a simple Section with title
+            title = props.get("title", "Grid Content")
+            columns = props.get("columns", 2)
+            children = props.get("children", [])
+
+            # If children are actual text descriptions, render as info
+            if children and isinstance(children[0], str):
+                return generate_callout_card(
+                    type="info",
+                    title=title,
+                    content=f"Layout: {columns} columns with {len(children)} items"
+                )
+            return None
+
+        elif component_type == "ToolCard":
+            name = props.get("name", props.get("title", "Tool"))
+            description = props.get("description", "")
+            url = props.get("url", "")
+
+            # ToolCard requires a valid URL
+            if url and url.startswith(("http://", "https://")):
+                return generate_tool_card(
+                    name=name,
+                    description=description,
+                    url=url,
+                    category=props.get("category"),
+                    pricing=props.get("pricing"),
+                    features=props.get("features", [])[:5] if props.get("features") else None
+                )
+            else:
+                # Fallback to LinkCard-style display without URL
+                return generate_component("a2ui.ToolCard", {
+                    "name": name,
+                    "description": description,
+                    "url": url or "https://example.com",
+                    "category": props.get("category", "tool")
+                })
+
+        elif component_type == "BookCard":
+            return generate_book_card(
+                title=props.get("title", "Book"),
+                author=props.get("author", "Unknown Author"),
+                year=props.get("year"),
+                isbn=props.get("isbn"),
+                url=props.get("url"),
+                rating=props.get("rating"),
+                description=props.get("description")
+            )
+
+        elif component_type == "TagGroup":
+            # TagGroup is deprecated - convert to TagCloud
+            tags = props.get("tags", props.get("items", []))
+            if tags:
+                # Convert to TagCloud format
+                tag_items = []
+                for t in tags[:20]:
+                    if isinstance(t, str):
+                        tag_items.append({"name": t, "count": 1})
+                    elif isinstance(t, dict):
+                        tag_items.append({"name": t.get("label", t.get("name", str(t))), "count": t.get("count", 1)})
+                return generate_component("a2ui.TagCloud", {"tags": tag_items})
+            return None
+
+        elif component_type == "TagCloud":
+            tags = props.get("tags", props.get("items", []))
+            if tags:
+                # Normalize tag format
+                tag_items = []
+                for t in tags[:20]:
+                    if isinstance(t, str):
+                        tag_items.append({"name": t, "count": 1})
+                    elif isinstance(t, dict):
+                        tag_items.append({"name": t.get("label", t.get("name", str(t))), "count": t.get("count", 1)})
+                return generate_component("a2ui.TagCloud", {"tags": tag_items})
+            return None
+
+        elif component_type == "CategoryBadge":
+            return generate_component("a2ui.CategoryBadge", {
+                "category": props.get("category", props.get("label", "Category")),
+                "color": props.get("color"),
+                "icon": props.get("icon"),
+                "size": props.get("size", "md"),
+            })
+
+        elif component_type == "StatusIndicator":
+            return generate_component("a2ui.StatusIndicator", {
+                "status": props.get("status", "pending"),
+                "label": props.get("label"),
+                "pulse": props.get("pulse", False),
+            })
+
+        elif component_type == "PriorityBadge":
+            return generate_component("a2ui.PriorityBadge", {
+                "priority": props.get("priority", props.get("level", "medium")),
+            })
+
+        elif component_type == "DifficultyBadge":
+            return generate_component("a2ui.DifficultyBadge", {
+                "level": props.get("level", props.get("difficulty", "intermediate")),
+            })
+
+        elif component_type == "ProfileCard":
+            return generate_component("a2ui.ProfileCard", {
+                "name": props.get("name", "Person"),
+                "title": props.get("title", props.get("role", "")),
+                "bio": props.get("bio", props.get("description", "")),
+                "imageUrl": props.get("imageUrl", props.get("avatar")),
+                "links": props.get("links", [])
+            })
+
+        elif component_type == "CompanyCard":
+            return generate_component("a2ui.CompanyCard", {
+                "name": props.get("name", "Company"),
+                "description": props.get("description", ""),
+                "industry": props.get("industry"),
+                "logoUrl": props.get("logoUrl", props.get("logo")),
+                "website": props.get("website", props.get("url"))
+            })
 
         else:
             # Generic fallback - create a callout with the data
@@ -497,18 +1092,24 @@ async def orchestrate_dashboard_with_llm(markdown_content: str) -> AsyncGenerato
         markdown_content
     )
 
-    # Step 5: Build and yield A2UI components
-    print(f"\n[BUILD] Building {len(component_specs)} components...")
+    # Step 5: Expand batched specs (e.g., ProConItem with multiple items)
+    expanded_specs = expand_component_specs(component_specs)
+
+    # Step 6: Build and yield A2UI components
+    print(f"\n[BUILD] Building {len(expanded_specs)} components (expanded from {len(component_specs)} specs)...")
 
     components_built = 0
     component_types_used = set()
 
-    for spec in component_specs:
+    for spec in expanded_specs:
         component = build_a2ui_component(spec, full_analysis)
         if component:
+            # Apply layout width hints and semantic zone
+            component = apply_layout_and_zone(component, spec)
+
             components_built += 1
             component_types_used.add(component.type)
-            print(f"[YIELD] Component {components_built}: {component.type} (id={component.id})")
+            print(f"[YIELD] Component {components_built}: {component.type} (id={component.id}, width={component.layout.get('width', 'full')}, zone={component.zone})")
             yield component
 
     print(f"\n[COMPLETE] Generated {components_built} components with {len(component_types_used)} unique types")

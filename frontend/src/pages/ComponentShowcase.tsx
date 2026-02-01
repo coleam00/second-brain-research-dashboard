@@ -5,7 +5,6 @@
  * to verify the dark blue theme styling.
  */
 
-import React from 'react';
 import { A2UIRenderer } from '@/components/A2UIRenderer';
 import type { A2UIComponent } from '@/lib/a2ui-catalog';
 

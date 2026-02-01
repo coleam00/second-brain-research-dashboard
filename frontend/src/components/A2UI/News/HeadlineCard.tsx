@@ -17,16 +17,18 @@ export interface HeadlineCardProps {
   summary?: string;
 
   /** News source (e.g., "TechCrunch", "Reuters") */
-  source: string;
+  source?: string;
 
-  /** Publication date in ISO format or Date object */
-  published_at: string | Date;
+  /** Publication date in ISO format or Date object (accepts both snake_case and camelCase) */
+  published_at?: string | Date;
+  publishedAt?: string | Date;
 
   /** Sentiment of the article (positive, negative, neutral) */
   sentiment?: 'positive' | 'negative' | 'neutral';
 
-  /** Optional image URL for the headline */
+  /** Optional image URL for the headline (accepts both snake_case and camelCase) */
   image_url?: string;
+  imageUrl?: string;
 }
 
 /**
@@ -40,9 +42,15 @@ export function HeadlineCard({
   summary,
   source,
   published_at,
+  publishedAt,
   sentiment,
   image_url,
+  imageUrl,
 }: HeadlineCardProps): React.ReactElement {
+  // Support both snake_case and camelCase (backend sends camelCase)
+  const displayImageUrl = image_url || imageUrl;
+  const displayPublishedAt = published_at || publishedAt;
+
   const getBorderColor = () => {
     if (sentiment === 'positive') return 'border-blue-400/40';
     if (sentiment === 'negative') return 'border-blue-500/30';
@@ -55,7 +63,8 @@ export function HeadlineCard({
     return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
   };
 
-  const formatDate = (date: string | Date): string => {
+  const formatDate = (date: string | Date | undefined): string => {
+    if (!date) return '';
     try {
       return new Date(date).toLocaleDateString();
     } catch {
@@ -65,10 +74,10 @@ export function HeadlineCard({
 
   return (
     <Card className={`${getBorderColor()} bg-gradient-to-br from-card to-secondary/30 group cursor-pointer hover:border-blue-400/60 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10`}>
-      {image_url && (
+      {displayImageUrl && (
         <div className="overflow-hidden rounded-t-lg">
           <img
-            src={image_url}
+            src={displayImageUrl}
             alt={title}
             className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           />
@@ -83,9 +92,11 @@ export function HeadlineCard({
             </Badge>
           )}
         </div>
-        <CardDescription className="text-blue-300/80">
-          {source} • {formatDate(published_at)}
-        </CardDescription>
+        {(source || displayPublishedAt) && (
+          <CardDescription className="text-blue-300/80">
+            {source}{source && displayPublishedAt ? ' • ' : ''}{formatDate(displayPublishedAt)}
+          </CardDescription>
+        )}
       </CardHeader>
       {summary && (
         <CardContent>

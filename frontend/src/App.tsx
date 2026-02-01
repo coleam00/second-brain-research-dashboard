@@ -1,19 +1,66 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import { MarkdownInput } from "@/components/MarkdownInput"
-import { A2UIRendererList } from "@/components/A2UIRenderer"
+import { A2UIRenderer, A2UIRendererList } from "@/components/A2UIRenderer"
 import { LoadingSkeleton } from "@/components/LoadingSkeleton"
-import type { A2UIComponent } from "@/lib/a2ui-catalog"
-import { FileText, Sparkles, ArrowLeft, RotateCcw } from "lucide-react"
+import type { A2UIComponent, SemanticZone } from "@/lib/a2ui-catalog"
+import { getGridSpan } from "@/lib/layout-engine"
+import { FileText, Sparkles, ArrowLeft, RotateCcw, LayoutDashboard, BookOpen, TrendingUp, Lightbulb, FileCode, Video, Link2, Tags } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+// Zone configuration for visual styling
+const ZONE_CONFIG: Record<SemanticZone, { title: string; icon: React.ReactNode; className: string }> = {
+  hero: { title: '', icon: null, className: '' }, // Hero has no header
+  metrics: { title: 'Key Metrics', icon: <TrendingUp className="h-4 w-4" />, className: 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/20' },
+  insights: { title: 'Key Insights', icon: <Lightbulb className="h-4 w-4" />, className: 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20' },
+  content: { title: 'Details', icon: <FileCode className="h-4 w-4" />, className: 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20' },
+  media: { title: 'Media', icon: <Video className="h-4 w-4" />, className: 'bg-gradient-to-r from-rose-500/10 to-red-500/10 border-rose-500/20' },
+  resources: { title: 'Resources', icon: <Link2 className="h-4 w-4" />, className: 'bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-500/20' },
+  tags: { title: 'Categories', icon: <Tags className="h-4 w-4" />, className: 'bg-gradient-to-r from-slate-500/10 to-gray-500/10 border-slate-500/20' },
+};
+
+// Zone render order
+const ZONE_ORDER: SemanticZone[] = ['hero', 'metrics', 'insights', 'content', 'media', 'resources', 'tags'];
+
+// Group components by zone
+function groupByZone(components: A2UIComponent[]): Record<SemanticZone, A2UIComponent[]> {
+  const groups: Record<SemanticZone, A2UIComponent[]> = {
+    hero: [],
+    metrics: [],
+    insights: [],
+    content: [],
+    media: [],
+    resources: [],
+    tags: [],
+  };
+
+  for (const comp of components) {
+    const zone = (comp.zone as SemanticZone) || 'content';
+    if (groups[zone]) {
+      groups[zone].push(comp);
+    } else {
+      groups.content.push(comp);
+    }
+  }
+
+  return groups;
+}
+
 type ViewState = 'input' | 'loading' | 'dashboard'
+type DashboardTab = 'dashboard' | 'source'
 
 function App() {
   const [dashboardComponents, setDashboardComponents] = useState<A2UIComponent[]>([])
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [_isGenerating, setIsGenerating] = useState(false)
   const [viewState, setViewState] = useState<ViewState>('input')
   const [lastMarkdown, setLastMarkdown] = useState<string>('')
+  const [dashboardTab, setDashboardTab] = useState<DashboardTab>('dashboard')
+
+  // Group components by semantic zone
+  const componentsByZone = useMemo(() => groupByZone(dashboardComponents), [dashboardComponents])
 
   const handleGenerate = useCallback(async (content: string, file?: File) => {
     console.log('Generate dashboard called:', { contentLength: content.length, file })
@@ -145,7 +192,29 @@ function App() {
                     <span className="font-semibold text-sm">Research Dashboard</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  {/* Dashboard/Source Toggle */}
+                  <div className="flex items-center bg-secondary/50 rounded-lg p-0.5">
+                    <Button
+                      variant={dashboardTab === 'dashboard' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setDashboardTab('dashboard')}
+                      className="gap-1.5 h-7 px-3"
+                    >
+                      <LayoutDashboard className="h-3.5 w-3.5" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant={dashboardTab === 'source' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setDashboardTab('source')}
+                      className="gap-1.5 h-7 px-3"
+                    >
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Source
+                    </Button>
+                  </div>
+                  <div className="h-6 w-px bg-border" />
                   <span className="text-xs text-muted-foreground">
                     {dashboardComponents.length} components
                   </span>
@@ -336,14 +405,186 @@ Your conclusions here..."
             transition={{ duration: 0.4 }}
           >
             <div className="max-w-7xl mx-auto px-4 py-6">
-              {/* Dashboard Grid */}
-              <div className="space-y-6">
-                <A2UIRendererList
-                  components={dashboardComponents}
-                  spacing="lg"
-                  showErrors={true}
-                />
-              </div>
+              <AnimatePresence mode="wait">
+                {dashboardTab === 'dashboard' ? (
+                  /* Semantic Zone Layout */
+                  <motion.div
+                    key="dashboard-content"
+                    className="space-y-8"
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0 }}
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.15 }
+                      }
+                    }}
+                  >
+                    {ZONE_ORDER.map((zone) => {
+                      const components = componentsByZone[zone];
+                      if (!components || components.length === 0) return null;
+
+                      const config = ZONE_CONFIG[zone];
+
+                      // Hero zone - no wrapper, full prominence
+                      if (zone === 'hero') {
+                        return (
+                          <motion.div
+                            key={zone}
+                            className="space-y-4"
+                            variants={{
+                              hidden: { opacity: 0, y: 20 },
+                              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                            }}
+                          >
+                            {components.map((component, index) => (
+                              <div key={component.id || `${zone}-${index}`} className="col-span-12">
+                                <A2UIRenderer component={component} showErrors={true} />
+                              </div>
+                            ))}
+                          </motion.div>
+                        );
+                      }
+
+                      // Metrics zone - horizontal layout with equal spacing
+                      if (zone === 'metrics') {
+                        return (
+                          <motion.section
+                            key={zone}
+                            className={`rounded-xl border p-6 ${config.className}`}
+                            variants={{
+                              hidden: { opacity: 0, y: 20 },
+                              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="text-blue-400">{config.icon}</span>
+                              <h2 className="text-lg font-semibold text-blue-100">{config.title}</h2>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                              {components.map((component, index) => (
+                                <A2UIRenderer key={component.id || `${zone}-${index}`} component={component} showErrors={true} />
+                              ))}
+                            </div>
+                          </motion.section>
+                        );
+                      }
+
+                      // Tags zone - compact horizontal layout
+                      if (zone === 'tags') {
+                        return (
+                          <motion.section
+                            key={zone}
+                            className={`rounded-xl border p-4 ${config.className}`}
+                            variants={{
+                              hidden: { opacity: 0, y: 20 },
+                              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-slate-400">{config.icon}</span>
+                              <h2 className="text-sm font-semibold text-slate-300">{config.title}</h2>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {components.map((component, index) => (
+                                <A2UIRenderer key={component.id || `${zone}-${index}`} component={component} showErrors={true} />
+                              ))}
+                            </div>
+                          </motion.section>
+                        );
+                      }
+
+                      // Other zones - grid layout with section header
+                      return (
+                        <motion.section
+                          key={zone}
+                          className={`rounded-xl border p-6 ${config.className}`}
+                          variants={{
+                            hidden: { opacity: 0, y: 20 },
+                            visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-4">
+                            <span className="text-blue-400">{config.icon}</span>
+                            <h2 className="text-lg font-semibold text-blue-100">{config.title}</h2>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {components.length} {components.length === 1 ? 'item' : 'items'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-12 gap-4 auto-rows-min">
+                            {components.map((component, index) => (
+                              <div
+                                key={component.id || `${zone}-${index}`}
+                                className={getGridSpan(component)}
+                              >
+                                <A2UIRenderer component={component} showErrors={true} />
+                              </div>
+                            ))}
+                          </div>
+                        </motion.section>
+                      );
+                    })}
+                  </motion.div>
+                ) : (
+                  /* Source Markdown View */
+                  <motion.div
+                    key="source-content"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-card rounded-xl border border-blue-500/20 p-6 shadow-xl"
+                  >
+                    <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+                      <BookOpen className="h-5 w-5 text-blue-400" />
+                      <h2 className="text-lg font-semibold">Source Document</h2>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {lastMarkdown.length} characters
+                      </span>
+                    </div>
+                    <div className="markdown-source">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
+                        components={{
+                          h1: ({children}) => <h1 className="text-3xl font-bold text-blue-100 border-b border-blue-500/30 pb-3 mb-6 mt-0">{children}</h1>,
+                          h2: ({children}) => <h2 className="text-2xl font-bold text-blue-100 border-b border-blue-500/20 pb-2 mb-4 mt-10">{children}</h2>,
+                          h3: ({children}) => <h3 className="text-xl font-semibold text-blue-100 mb-3 mt-8">{children}</h3>,
+                          h4: ({children}) => <h4 className="text-lg font-semibold text-blue-200 mb-2 mt-6">{children}</h4>,
+                          p: ({children}) => <p className="text-blue-200 leading-relaxed mb-4">{children}</p>,
+                          strong: ({children}) => <strong className="text-blue-100 font-semibold">{children}</strong>,
+                          em: ({children}) => <em className="text-blue-300 italic">{children}</em>,
+                          ul: ({children}) => <ul className="text-blue-200 my-4 ml-6 list-disc space-y-2">{children}</ul>,
+                          ol: ({children}) => <ol className="text-blue-200 my-4 ml-6 list-decimal space-y-2">{children}</ol>,
+                          li: ({children}) => <li className="text-blue-200 marker:text-blue-400">{children}</li>,
+                          a: ({href, children}) => <a href={href} className="text-blue-400 underline hover:text-blue-300 transition-colors">{children}</a>,
+                          code: ({className, children}) => {
+                            const isInline = !className;
+                            if (isInline) {
+                              return <code className="text-blue-300 bg-blue-900/40 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>;
+                            }
+                            return (
+                              <code className={`${className} block bg-secondary/60 border border-blue-500/20 rounded-lg p-4 my-4 overflow-x-auto text-sm font-mono text-blue-200`}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          pre: ({children}) => <pre className="bg-secondary/60 border border-blue-500/20 rounded-lg p-4 my-6 overflow-x-auto">{children}</pre>,
+                          blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 my-6 text-blue-300 italic">{children}</blockquote>,
+                          table: ({children}) => <table className="w-full border-collapse my-6">{children}</table>,
+                          thead: ({children}) => <thead className="bg-blue-900/30">{children}</thead>,
+                          th: ({children}) => <th className="text-blue-100 p-3 text-left border border-blue-500/20 font-semibold">{children}</th>,
+                          td: ({children}) => <td className="p-3 border border-blue-500/20 text-blue-200">{children}</td>,
+                          hr: () => <hr className="border-blue-500/30 my-8" />,
+                        }}
+                      >
+                        {lastMarkdown}
+                      </ReactMarkdown>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.main>
         )}

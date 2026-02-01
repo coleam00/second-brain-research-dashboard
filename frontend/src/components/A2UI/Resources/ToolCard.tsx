@@ -15,13 +15,14 @@ export interface ToolCardProps {
   name: string;
 
   /** Tool description */
-  description: string;
+  description?: string;
 
-  /** Star rating (1-5) */
-  rating: number;
+  /** Star rating (1-5) - optional, defaults to not showing stars if not provided */
+  rating?: number;
 
-  /** Optional tool icon/logo URL */
+  /** Optional tool icon/logo URL (accepts both 'icon' and 'iconUrl' from backend) */
   icon?: string;
+  iconUrl?: string;
 
   /** Optional tool website URL */
   url?: string;
@@ -31,6 +32,9 @@ export interface ToolCardProps {
 
   /** Optional pricing info */
   pricing?: string;
+
+  /** Optional features list from backend */
+  features?: string[];
 }
 
 /**
@@ -44,15 +48,19 @@ export function ToolCard({
   description,
   rating,
   icon,
+  iconUrl,
   url,
   category,
   pricing,
+  features,
 }: ToolCardProps): React.ReactElement {
-  // Clamp rating between 1 and 5
-  const clampedRating = Math.min(5, Math.max(1, rating));
+  // Support both 'icon' and 'iconUrl' prop names (backend sends 'iconUrl')
+  const displayIcon = icon || iconUrl;
 
-  // Generate star rating display
+  // Generate star rating display (only if rating is provided)
   const renderStars = () => {
+    if (rating === undefined || rating === null) return null;
+    const clampedRating = Math.min(5, Math.max(1, rating));
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
@@ -61,7 +69,12 @@ export function ToolCard({
         </span>
       );
     }
-    return stars;
+    return (
+      <div className="flex items-center text-lg leading-none">
+        {stars}
+        <span className="text-xs text-blue-200/60 ml-1">({rating})</span>
+      </div>
+    );
   };
 
   return (
@@ -69,9 +82,9 @@ export function ToolCard({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
-            {icon && (
+            {displayIcon && (
               <img
-                src={icon}
+                src={displayIcon}
                 alt={name}
                 className="w-10 h-10 rounded shrink-0"
                 onError={(e) => {
@@ -83,19 +96,26 @@ export function ToolCard({
               <CardTitle className="text-base text-white">{name}</CardTitle>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {category && <CardDescription className="text-blue-300/80">{category}</CardDescription>}
-                <div className="flex items-center text-lg leading-none">
-                  {renderStars()}
-                  <span className="text-xs text-blue-200/60 ml-1">({rating})</span>
-                </div>
+                {renderStars()}
               </div>
             </div>
           </div>
           {pricing && <Badge className="shrink-0 bg-blue-500/20 text-blue-300 border-blue-400/30 hover:bg-blue-500/30">{pricing}</Badge>}
         </div>
       </CardHeader>
-      {description && (
-        <CardContent>
-          <p className="text-sm text-blue-200/70">{description}</p>
+      {(description || features) && (
+        <CardContent className="space-y-2">
+          {description && <p className="text-sm text-blue-200/70">{description}</p>}
+          {features && features.length > 0 && (
+            <ul className="text-xs text-blue-300/80 space-y-1">
+              {features.slice(0, 5).map((feature, i) => (
+                <li key={i} className="flex items-start gap-1">
+                  <span className="text-blue-400">•</span>
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       )}
       {url && (

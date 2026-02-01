@@ -161,14 +161,22 @@ async def ag_ui_stream(request: AgentRequest):
             async for component in orchestrate_dashboard_with_llm(request.markdown):
                 component_count += 1
 
-                # Format as A2UI component directly
+                # Format as A2UI component directly - include layout and zone
                 component_dict = {
                     "type": component.type,
                     "id": component.id,
-                    "props": component.props
+                    "props": component.props,
                 }
 
-                print(f"[STREAM] Emitting component {component_count}: {component.type}")
+                # Add layout if present
+                if component.layout:
+                    component_dict["layout"] = component.layout
+
+                # Add zone if present
+                if component.zone:
+                    component_dict["zone"] = component.zone
+
+                print(f"[STREAM] Emitting component {component_count}: {component.type} (zone={component.zone})")
                 yield f"data: {json.dumps(component_dict)}\n\n"
 
             print(f"[STREAM] Complete - emitted {component_count} components")
