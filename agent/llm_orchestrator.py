@@ -51,6 +51,7 @@ from a2ui_generator import (
     generate_executive_summary,
     generate_tool_card,
     generate_book_card,
+    generate_timeline_event,
 )
 from content_analyzer import parse_markdown, ContentAnalysis, _classify_heuristic
 from prompts import (
@@ -182,13 +183,15 @@ COMPONENT_DEFAULT_WIDTHS = {
 }
 
 
-async def call_llm(prompt: str, system_prompt: str = "") -> str:
+async def call_llm(prompt: str, system_prompt: str = "", max_tokens: int = 4000, temperature: float = 0.7) -> str:
     """
     Call OpenRouter LLM API with the given prompt.
 
     Args:
         prompt: The user prompt to send
         system_prompt: Optional system prompt
+        max_tokens: Maximum tokens in the response
+        temperature: Sampling temperature (lower = more precise)
 
     Returns:
         The LLM response text
@@ -201,7 +204,7 @@ async def call_llm(prompt: str, system_prompt: str = "") -> str:
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             f"{OPENROUTER_BASE_URL}/chat/completions",
             headers={
@@ -213,8 +216,8 @@ async def call_llm(prompt: str, system_prompt: str = "") -> str:
             json={
                 "model": OPENROUTER_MODEL,
                 "messages": messages,
-                "temperature": 0.7,
-                "max_tokens": 4000,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
             }
         )
 
@@ -229,7 +232,7 @@ async def call_llm(prompt: str, system_prompt: str = "") -> str:
 
 def extract_json_from_response(response: str) -> dict:
     """
-    Extract JSON from LLM response, handling markdown code blocks.
+    Extract JSON from LLM response, handling markdown code blocks and truncated responses.
 
     Args:
         response: Raw LLM response text
@@ -252,9 +255,74 @@ def extract_json_from_response(response: str) -> dict:
     try:
         return json.loads(json_str)
     except json.JSONDecodeError as e:
-        print(f"[JSON PARSE ERROR] {e}")
-        print(f"[RAW RESPONSE] {response[:500]}...")
+        print(f"[JSON PARSE ERROR] {e}", flush=True)
+        # Try to recover truncated JSON by extracting complete component objects
+        recovered = _recover_truncated_components(json_str)
+        if recovered:
+            print(f"[JSON RECOVERY] Recovered {len(recovered)} components from truncated response", flush=True)
+            return {"components": recovered}
+        print(f"[RAW RESPONSE] {response[:500]}...", flush=True)
         return {}
+
+
+def _recover_truncated_components(json_str: str) -> list[dict]:
+    """
+    Recover individual component objects from a truncated JSON response.
+    Finds the components array and extracts all complete JSON objects from it.
+    """
+    # Find the start of the components array
+    match = re.search(r'"components"\s*:\s*\[', json_str)
+    if not match:
+        return []
+
+    array_start = match.end()
+    components = []
+    pos = array_start
+
+    # Extract complete JSON objects one at a time
+    while pos < len(json_str):
+        # Skip whitespace and commas
+        while pos < len(json_str) and json_str[pos] in ' \t\n\r,':
+            pos += 1
+        if pos >= len(json_str) or json_str[pos] != '{':
+            break
+
+        # Find the matching closing brace
+        depth = 0
+        start = pos
+        in_string = False
+        escape_next = False
+        for i in range(start, len(json_str)):
+            c = json_str[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if c == '\\' and in_string:
+                escape_next = True
+                continue
+            if c == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    # Found complete object
+                    try:
+                        obj = json.loads(json_str[start:i+1])
+                        components.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                    pos = i + 1
+                    break
+        else:
+            # Reached end without finding matching brace — truncated
+            break
+
+    return components
 
 
 async def analyze_content_with_llm(markdown_content: str) -> dict:
@@ -272,8 +340,15 @@ Always respond with valid JSON only, no additional text."""
 
     prompt = format_content_analysis_prompt(markdown_content)
 
-    print("[LLM] Analyzing content...")
-    response = await call_llm(prompt, system_prompt)
+    print(f"[LLM] Analyzing content... (prompt length: {len(prompt)} chars)")
+    try:
+        response = await call_llm(prompt, system_prompt)
+        print(f"[LLM] Analysis response received ({len(response)} chars)")
+    except Exception as e:
+        print(f"[LLM ERROR] Content analysis failed: {e}")
+        import traceback
+        traceback.print_exc()
+        response = ""
     result = extract_json_from_response(response)
 
     # Provide defaults if parsing failed
@@ -342,60 +417,58 @@ async def select_components_with_llm(
     """
     system_prompt = """You are an expert A2UI component architect. Generate diverse dashboard components.
 CRITICAL: You MUST return valid JSON with a "components" array containing component specifications.
-Each component needs: component_type, priority, and props with actual data from the document.
-Ensure variety: at least 4 different component types, never 3+ consecutive same type."""
+Each component needs: component_type, priority, zone, and props with actual data from the document.
+RULES:
+1. Cover ALL sections of the document - do NOT stop at the first few sections.
+2. Use at least 6 different component types. No single type should exceed 40% of components.
+3. Never place 3+ consecutive components of the same type.
+4. Match component types to content: quotes->QuoteCard, news stories->HeadlineCard, stats->StatCard, events->TimelineEvent.
+5. For documents with 5+ sections, generate 15-25 components."""
 
     prompt = format_component_selection_prompt(content_analysis, layout_decision)
 
-    # Add actual content snippets for the LLM to use
+    # Add full document content for the LLM to use (up to 30k chars)
+    content_limit = 30000
+    if len(markdown_content) > content_limit:
+        doc_content = markdown_content[:content_limit] + "\n\n[... content truncated ...]"
+    else:
+        doc_content = markdown_content
+
     prompt += f"""
 
 ## Actual Document Content (use this to populate component props)
 
-{markdown_content[:3000]}
+{doc_content}
 
-Remember: Extract REAL data from the document above to populate component props.
+CRITICAL: You must generate components covering ALL sections and topics above, not just the first few.
+Extract REAL data from the document to populate component props.
 Return JSON with "components" array."""
 
-    print("[LLM] Selecting components...")
-    response = await call_llm(prompt, system_prompt)
+    import sys
+    print(f"[LLM] Selecting components... (prompt length: {len(prompt)} chars)", flush=True)
+    try:
+        response = await call_llm(prompt, system_prompt, max_tokens=16000, temperature=0.4)
+        print(f"[LLM] Response received ({len(response)} chars)", flush=True)
+    except Exception as e:
+        print(f"[LLM ERROR] Component selection LLM call failed: {e}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc()
+        raise
+
     result = extract_json_from_response(response)
 
     components = result.get("components", [])
 
     if not components:
-        print("[LLM] No components returned, using fallback")
-        # Fallback components WITH explicit zones for proper grouping
-        components = [
-            {
-                "component_type": "TLDR",
-                "priority": "high",
-                "zone": "hero",  # Explicit zone for fallback
-                "props": {"content": content_analysis.get("title", "Document Summary"), "max_length": 200}
-            },
-            {
-                "component_type": "KeyTakeaways",
-                "priority": "high",
-                "zone": "insights",  # Explicit zone for fallback
-                "props": {"items": content_analysis.get("sections", ["Key point 1", "Key point 2"])[:5]}
-            },
-            {
-                "component_type": "CalloutCard",
-                "priority": "medium",
-                "zone": "insights",  # Explicit zone for fallback
-                "props": {"type": "info", "title": "About This Document", "content": f"Type: {content_analysis.get('document_type', 'article')}"}
-            },
-            {
-                "component_type": "Badge",
-                "priority": "low",
-                "zone": "tags",  # Explicit zone for fallback
-                "props": {"label": content_analysis.get("document_type", "article").title(), "count": 1}
-            }
-        ]
+        print(f"[LLM ERROR] No components parsed. Response first 1000 chars:\n{response[:1000]}", file=sys.stderr, flush=True)
+        raise ValueError(f"LLM returned no components. Parsed keys: {list(result.keys())}. Response length: {len(response)}. First 200 chars: {response[:200]}")
 
     # Validate variety
     variety = validate_component_variety(components)
     print(f"[LLM] Components selected: {len(components)}, unique types: {variety['unique_types_count']}")
+    if not variety['valid']:
+        for violation in variety.get('violations', []):
+            print(f"[LLM VARIETY WARNING] {violation}")
 
     return components
 
@@ -566,6 +639,7 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
         "difficultybadge": "DifficultyBadge",
         "profilecard": "ProfileCard",
         "companycard": "CompanyCard",
+        "timelineevent": "TimelineEvent",
     }
 
     # Try to normalize type (handle various casing from LLM)
@@ -695,7 +769,7 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
 
         elif component_type == "QuoteCard":
             return generate_quote_card(
-                quote=props.get("quote", props.get("text", "Quote text")),
+                text=props.get("quote", props.get("text", "Quote text")),
                 author=props.get("author", "Unknown"),
                 source=props.get("source")
             )
@@ -1027,6 +1101,17 @@ def build_a2ui_component(spec: dict, content_analysis: dict) -> A2UIComponent | 
                 "logoUrl": props.get("logoUrl", props.get("logo")),
                 "website": props.get("website", props.get("url"))
             })
+
+        elif component_type == "TimelineEvent":
+            event_type = props.get("event_type", props.get("eventType", "announcement"))
+            if event_type not in {"article", "announcement", "milestone", "update"}:
+                event_type = "announcement"
+            return generate_timeline_event(
+                title=props.get("title", "Event"),
+                timestamp=props.get("timestamp", props.get("date", "")),
+                content=props.get("content", props.get("description", "")),
+                event_type=event_type,
+            )
 
         else:
             # Generic fallback - create a callout with the data

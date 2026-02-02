@@ -331,16 +331,16 @@ You MUST follow these rules to ensure thorough content representation:
 
 ### Rule 1: Cover ALL Major Content Sections
 - **Generate a component for EVERY major section/topic in the document**
-- If document has 10 items/topics, generate components for ALL 10, not just 2-3
-- Each heading, list item, or distinct concept deserves its own component
-- For lists of items (e.g., "10 content ideas"), create a RankedItem or Card for EACH item
-- Minimum: Generate 1 component per major section + summary components
+- If document has 10 sections/topics, generate components for ALL 10, not just 2-3
+- Bullet points WITHIN a section should be collapsed into a SINGLE component (KeyTakeaways, CalloutCard, or ChecklistItem) — do NOT create one RankedItem per bullet point
+- Only use RankedItem for content that is explicitly ranked/ordered (e.g., "Top 10 tools")
+- Minimum: Generate 1-2 components per major section + summary components
 
 ### Rule 2: Scale With Document Size
 - Short documents (< 500 words): 5-8 components
 - Medium documents (500-2000 words): 10-15 components
 - Long documents (2000+ words): 15-25 components
-- Lists with N items: Generate N individual components for the items + summary components
+- IMPORTANT: Stay within these ranges. More is NOT better — aim for information density per component.
 
 ### Rule 3: Minimum Component Type Diversity
 - **Generate at least 4 DIFFERENT component types** in your selection
@@ -395,6 +395,27 @@ Follow this process:
 - Steps/procedures → StepCard, ChecklistItem
 - Media → VideoCard, ImageCard
 - Summaries → TLDR, KeyTakeaways, ExecutiveSummary
+
+### Step 2b: Content Pattern Matching (IMPORTANT)
+Match these content patterns to the BEST component type:
+- Direct quotes with attribution → **QuoteCard** (NOT RankedItem or BulletPoint)
+- News stories with dates/sources → **HeadlineCard** (with appropriate sentiment: positive/negative/neutral)
+- Statistics with numbers/percentages → **StatCard** or **TrendIndicator**
+- Chronological events, upcoming dates, or timelines → **TimelineEvent**
+- Named people with roles/titles → **ProfileCard**
+- Lists of resources/tools with URLs → **ToolCard** or **LinkCard**
+- Pro/con or advantage/disadvantage content → **ProConItem**
+- Step-by-step instructions → **StepCard**
+- Grouped short items (funding rounds, product launches) → **CalloutCard** with grouped content
+- Expert tips or advice → **ExpertTip**
+- Key statistics in a group → **MetricRow** for related metrics together
+
+### Sentiment Guidelines for HeadlineCards
+Assign accurate sentiment:
+- **positive**: achievements, breakthroughs, funding, launches, growth, improvements, open-source releases
+- **negative**: failures, layoffs, bans, restrictions, losses, declines, security breaches
+- **neutral**: policy announcements without clear positive/negative framing, mixed outcomes
+Do NOT default everything to "neutral" - analyze the actual tone of the content.
 
 ### Step 3: Enforce Variety
 - Check component type counts
@@ -523,17 +544,15 @@ Return a JSON array of component specifications:
 
 ## Important Guidelines
 
-1. **COMPREHENSIVE COVERAGE**: Generate a component for EVERY major section, topic, or list item - do NOT skip content
-2. **Diversity First**: Aim for 6-8 different component types minimum
+1. **COMPREHENSIVE COVERAGE**: Generate a component for EVERY major section — do NOT skip sections after the first few
+2. **Diversity First**: Aim for 6-8 different component types minimum. No single type should exceed 40% of total.
 3. **Break Up Patterns**: Never have more than 2 consecutive identical components
 4. **Use Width Hints**: Specify width_hint for visual balance (third for stats, full for code/tables, half for callouts)
 5. **Use Semantic Zones**: ALWAYS assign a zone to each component (hero, metrics, insights, content, media, resources, tags)
-6. **Match Content**: Choose components that fit the actual content structure
+6. **Match Content to Best Type**: Use QuoteCard for quotes, HeadlineCard for news, StatCard for numbers, TimelineEvent for events
 7. **Provide Complete Props**: Include all necessary data for each component
-8. **Scale With Content**: Long documents need MORE components (15-25), not fewer
-9. **Group Similar Widths**: Place third-width cards together, full-width content in sequence
-
-IMPORTANT: If the document contains a list of 10 items, you MUST generate 10+ components covering ALL items, not just 2-3 samples.
+8. **Consolidate Lists**: Bullet points within a section go into ONE component (KeyTakeaways, CalloutCard) — not one RankedItem per bullet
+9. **Stay in Range**: 15-25 components for long documents. More is not better.
 
 Begin your component selection now."""
 
@@ -553,7 +572,8 @@ def format_content_analysis_prompt(markdown_content: str) -> str:
         Formatted prompt string ready for LLM
     """
     # Truncate very long content to stay within token limits
-    max_length = 8000
+    # Claude Haiku 4.5 has 200k context window; 30k chars is ~7500 tokens
+    max_length = 30000
     if len(markdown_content) > max_length:
         truncated_content = markdown_content[:max_length] + "\n\n[... content truncated for analysis ...]"
     else:
@@ -625,7 +645,7 @@ def format_component_selection_prompt(content_analysis: dict, layout_decision: d
     analysis_text = f"""
 Document Type: {content_analysis.get('document_type', 'unknown')}
 Title: {content_analysis.get('title', 'Untitled')}
-Sections: {sections[:5]} (showing first 5)
+Sections ({len(sections)} total): {sections[:30]}
 Code Blocks: {len(code_blocks)} blocks
 Tables: {len(tables)} tables
 Links: {len(links)} total
@@ -633,12 +653,13 @@ Media: {len(youtube_links)} videos, {len(github_links)} repos
 """
 
     # Format layout decision
+    suggestions = layout_decision.get('component_suggestions') or layout_decision.get('component_priorities') or []
     layout_text = f"""
 Selected Layout: {layout_decision.get('layout_type', 'unknown')}
 Confidence: {layout_decision.get('confidence', 0.0):.2f}
 Reasoning: {layout_decision.get('reasoning', '')}
 Alternative Layouts: {', '.join(layout_decision.get('alternative_layouts', []))}
-Component Priorities: {', '.join(layout_decision.get('component_suggestions', [])[:5])}
+Component Priorities: {', '.join(suggestions[:15])}
 """
 
     return COMPONENT_SELECTION_PROMPT.format(
@@ -701,12 +722,25 @@ def validate_component_variety(components: list[dict]) -> dict:
     if not meets_no_consecutive:
         violations.append(f'Found {max_consecutive} consecutive same type, max allowed is 2')
 
+    # Check for type dominance (no single type should be >40% of components)
+    type_distribution = {t: component_types.count(t) for t in unique_types}
+    meets_no_dominance = True
+    if len(components) >= 5:
+        for comp_type, count in type_distribution.items():
+            ratio = count / len(components)
+            if ratio > 0.40:
+                meets_no_dominance = False
+                violations.append(
+                    f"'{comp_type}' dominates at {count}/{len(components)} ({ratio:.0%}), max allowed is 40%"
+                )
+
     return {
-        'valid': meets_min_types and meets_no_consecutive,
+        'valid': meets_min_types and meets_no_consecutive and meets_no_dominance,
         'unique_types_count': unique_count,
         'max_consecutive_same_type': max_consecutive,
         'meets_min_types': meets_min_types,
         'meets_no_consecutive': meets_no_consecutive,
+        'meets_no_dominance': meets_no_dominance,
         'violations': violations,
-        'component_type_distribution': {t: component_types.count(t) for t in unique_types}
+        'component_type_distribution': type_distribution
     }
