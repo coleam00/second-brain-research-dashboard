@@ -1,217 +1,268 @@
 """
-Second Brain Agent - Pydantic AI agent configuration with OpenRouter.
+Second Brain Agent - Pydantic AI agent with AG-UI protocol support.
 
-This module defines the core Pydantic AI agent that transforms Markdown research
-documents into generative UI dashboards using Claude Sonnet 4 via OpenRouter.
+This agent uses StateDeps for bidirectional state sync with the frontend
+and emits proper AG-UI events for streaming components.
 """
 
 import os
-from typing import Any
+from typing import Any, Literal
+from uuid import uuid4
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 
 
-class AgentState(BaseModel):
+# JSON Patch operation model (RFC 6902)
+class JSONPatchOp(BaseModel):
+    """JSON Patch operation for state updates."""
+    op: Literal["add", "remove", "replace", "move", "copy", "test"]
+    path: str
+    value: Any = None
+    from_: str | None = Field(default=None, alias="from")
+
+
+class DashboardState(BaseModel):
     """
-    State model for the Second Brain Agent.
+    Shared state between frontend and agent.
 
-    Tracks the document content being analyzed and the analysis results
-    throughout the agent's processing pipeline.
+    This state is synchronized bidirectionally via AG-UI protocol.
+    The frontend can read and update this state, and the agent
+    can emit StateSnapshot/StateDelta events to update it.
     """
+    # Document info
+    markdown_content: str = ""
+    document_title: str = ""
+    document_type: str = ""  # tutorial, research, article, etc.
 
-    document_content: str = Field(
-        description="The original Markdown content provided by the user"
-    )
+    # Analysis results
+    content_analysis: dict[str, Any] = Field(default_factory=dict)
+    layout_type: str = ""  # instructional, data, news, etc.
 
-    content_type: str | None = Field(
-        default=None,
-        description="Detected content type (e.g., 'research', 'tutorial', 'article', 'notes')"
-    )
+    # Generated components (A2UI format)
+    components: list[dict[str, Any]] = Field(default_factory=list)
 
-    layout_type: str | None = Field(
-        default=None,
-        description="Optimal layout type selected (e.g., 'magazine', 'dashboard', 'tutorial')"
-    )
+    # Processing status
+    status: str = "idle"  # idle, analyzing, generating, complete, error
+    progress: int = 0  # 0-100
+    current_step: str = ""
 
-    analysis_results: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Extracted components and metadata from content analysis"
-    )
+    # Activity log for frontend rendering
+    activity_log: list[dict[str, Any]] = Field(default_factory=list)
 
-    error_message: str | None = Field(
-        default=None,
-        description="Error message if processing fails"
-    )
+    # Error tracking
+    error_message: str | None = None
 
 
-def create_openrouter_model(model_name: str, api_key: str) -> OpenAIModel:
-    """
-    Create an OpenRouter model instance configured for Claude Sonnet 4.
+def create_openrouter_model() -> OpenAIModel:
+    """Create OpenRouter model instance."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable required")
 
-    OpenRouter uses OpenAI-compatible API, so we use OpenAIModel from Pydantic AI
-    with the 'openrouter' provider.
-
-    Args:
-        model_name: The OpenRouter model identifier (e.g., "anthropic/claude-sonnet-4")
-        api_key: OpenRouter API key
-
-    Returns:
-        Configured OpenAIModel instance
-    """
-    # Set the API key in environment for the provider to pick up
+    model_name = os.getenv("OPENROUTER_MODEL", "anthropic/claude-sonnet-4")
     os.environ["OPENROUTER_API_KEY"] = api_key
     return OpenAIModel(model_name, provider='openrouter')
 
 
-# Create the agent instance
-def create_agent() -> Agent[AgentState, str]:
+def create_agent() -> Agent[DashboardState, str]:
     """
-    Create and configure the Second Brain Pydantic AI agent.
+    Create the Second Brain agent with DashboardState dependencies.
 
-    The agent uses Claude Sonnet 4 via OpenRouter to analyze Markdown content
-    and generate dashboard layouts.
-
-    Returns:
-        Configured Pydantic AI Agent instance
-
-    Raises:
-        ValueError: If OPENROUTER_API_KEY is not set in environment
+    The agent uses DashboardState for state management and
+    synchronization with the frontend.
     """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "OPENROUTER_API_KEY environment variable is required. "
-            "Please set it in your .env file."
-        )
+    model = create_openrouter_model()
 
-    model_name = os.getenv("OPENROUTER_MODEL", "anthropic/claude-sonnet-4")
-
-    # Create OpenRouter model instance
-    model = create_openrouter_model(model_name, api_key)
-
-    # Create agent with system prompt
-    agent_instance = Agent(
+    agent = Agent(
         model=model,
-        deps_type=AgentState,
+        deps_type=DashboardState,
         output_type=str,
-        system_prompt=(
-            "You are a specialized AI assistant that analyzes Markdown research documents "
-            "and transforms them into structured dashboard layouts. Your role is to:\n"
-            "1. Analyze the content type and structure of Markdown documents\n"
-            "2. Extract key components (headlines, statistics, quotes, code blocks, etc.)\n"
-            "3. Determine the optimal layout type for presenting the information\n"
-            "4. Generate component definitions following the AG-UI protocol\n\n"
-            "You should respond with structured data that can be used to build "
-            "interactive, visual dashboards that make research documents more engaging "
-            "and easier to navigate."
-        ),
+        system_prompt="""You are a specialized AI assistant that transforms Markdown research documents into interactive dashboard components.
+
+Your workflow:
+1. Analyze the markdown content to understand its structure and type
+2. Select an optimal layout strategy based on the content
+3. Generate A2UI components that best represent the information
+
+Always use your tools in sequence:
+1. First call analyze_content() to understand the document
+2. Then call select_layout() to choose the best layout
+3. Finally call generate_dashboard_components() to create the UI
+
+Respond conversationally while using tools to do the actual work."""
     )
 
-    # Register tools
-    @agent_instance.tool
-    async def analyze_content_type(ctx: RunContext[AgentState], markdown_content: str) -> str:
+    # Tool: Analyze Content
+    @agent.tool
+    async def analyze_content(
+        ctx: RunContext[DashboardState],
+    ) -> str:
         """
-        Analyze the Markdown content to determine its type.
+        Analyze the markdown content to determine document type and extract key elements.
 
-        This tool examines the structure, headers, and content patterns to classify
-        the document as research, tutorial, article, notes, etc.
-
-        Args:
-            ctx: Agent context with state
-            markdown_content: The Markdown content to analyze
-
-        Returns:
-            Content type classification (e.g., 'research', 'tutorial', 'article')
+        This tool updates the shared state with analysis results.
         """
-        # Simple heuristic-based classification
-        content_lower = markdown_content.lower()
+        from content_analyzer import parse_markdown
+        from llm_orchestrator import analyze_content_with_llm
 
-        # Check for tutorial indicators
-        if any(word in content_lower for word in ['step', 'tutorial', 'how to', 'guide', 'lesson']):
-            content_type = 'tutorial'
-        # Check for research indicators
-        elif any(word in content_lower for word in ['abstract', 'methodology', 'results', 'conclusion', 'references']):
-            content_type = 'research'
-        # Check for code-heavy content
-        elif markdown_content.count('```') >= 4:
-            content_type = 'technical_guide'
-        # Default to article
-        else:
-            content_type = 'article'
+        state = ctx.deps
+        markdown = state.markdown_content
 
-        # Update state
-        ctx.deps.content_type = content_type
+        # Update state to show we're analyzing
+        state.status = "analyzing"
+        state.progress = 20
+        state.current_step = "Analyzing document structure..."
+        state.activity_log.append({
+            "id": str(uuid4()),
+            "message": "Starting content analysis",
+            "timestamp": datetime.now().isoformat(),
+            "status": "in_progress"
+        })
 
-        return f"Content classified as: {content_type}"
+        # Parse markdown structure
+        parsed = parse_markdown(markdown)
 
-    @agent_instance.tool
-    async def extract_components(ctx: RunContext[AgentState], markdown_content: str) -> dict[str, Any]:
-        """
-        Extract key components from the Markdown content.
+        # Get LLM analysis
+        analysis = await analyze_content_with_llm(markdown)
 
-        This tool identifies and extracts headlines, statistics, quotes, code blocks,
-        images, and other structural elements for dashboard rendering.
-
-        Args:
-            ctx: Agent context with state
-            markdown_content: The Markdown content to analyze
-
-        Returns:
-            Dictionary of extracted components
-        """
-        import re
-
-        components = {
-            'headlines': [],
-            'code_blocks': [],
-            'quotes': [],
-            'images': [],
-            'statistics': [],
+        # Update state with results
+        state.document_title = parsed.get("title", "Untitled")
+        state.document_type = analysis.get("document_type", "article")
+        state.content_analysis = {
+            **parsed,
+            **analysis
         }
+        state.progress = 40
+        state.activity_log.append({
+            "id": str(uuid4()),
+            "message": f"Document classified as: {analysis.get('document_type', 'article')}",
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed"
+        })
 
-        # Extract headlines (# headers)
-        headlines = re.findall(r'^#+\s+(.+)$', markdown_content, re.MULTILINE)
-        components['headlines'] = headlines[:5]  # Top 5 headlines
+        return f"Content analyzed. Document type: {state.document_type}, Title: {state.document_title}"
 
-        # Extract code blocks
-        code_blocks = re.findall(r'```(\w*)\n(.*?)```', markdown_content, re.DOTALL)
-        components['code_blocks'] = [
-            {'language': lang or 'text', 'code': code.strip()}
-            for lang, code in code_blocks[:3]  # Top 3 code blocks
-        ]
+    # Tool: Select Layout
+    @agent.tool
+    async def select_layout(
+        ctx: RunContext[DashboardState],
+    ) -> str:
+        """
+        Select the optimal layout strategy based on content analysis.
 
-        # Extract blockquotes
-        quotes = re.findall(r'^>\s+(.+)$', markdown_content, re.MULTILINE)
-        components['quotes'] = quotes[:3]  # Top 3 quotes
+        Layout types: instructional, data, news, list, summary, resource, media
+        """
+        from llm_orchestrator import select_layout_with_llm
 
-        # Extract image references
-        images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', markdown_content)
-        components['images'] = [
-            {'alt': alt, 'url': url}
-            for alt, url in images[:5]  # Top 5 images
-        ]
+        state = ctx.deps
 
-        # Extract potential statistics (numbers with context)
-        stats = re.findall(r'\b(\d+(?:\.\d+)?%?)\s+(\w+)', markdown_content)
-        components['statistics'] = [
-            {'value': value, 'label': label}
-            for value, label in stats[:5]  # Top 5 statistics
-        ]
+        state.current_step = "Selecting optimal layout..."
+        state.progress = 50
 
-        # Update state
-        ctx.deps.analysis_results = components
+        # Get layout recommendation from LLM
+        layout_result = await select_layout_with_llm(state.content_analysis)
+        layout_type = layout_result.get("layout_type", "content")
 
-        return components
+        state.layout_type = layout_type
+        state.progress = 60
+        state.activity_log.append({
+            "id": str(uuid4()),
+            "message": f"Selected layout: {layout_type}",
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed"
+        })
 
-    return agent_instance
+        return f"Layout selected: {layout_type}"
+
+    # Tool: Generate Dashboard Components
+    @agent.tool
+    async def generate_dashboard_components(
+        ctx: RunContext[DashboardState],
+    ) -> str:
+        """
+        Generate A2UI dashboard components based on analysis and layout.
+
+        This tool creates the actual UI components that will be rendered
+        by the frontend's A2UI catalog.
+        """
+        from llm_orchestrator import (
+            select_components_with_llm,
+            build_a2ui_component,
+            apply_layout_and_zone,
+            expand_component_specs
+        )
+
+        state = ctx.deps
+
+        # Initial progress update
+        state.status = "generating"
+        state.current_step = "Generating dashboard components..."
+        state.progress = 70
+        state.components = []  # Clear existing
+
+        # Get component specifications from LLM
+        component_specs = await select_components_with_llm(
+            state.content_analysis,
+            {"layout_type": state.layout_type},
+            state.markdown_content
+        )
+
+        # Expand batch specs (e.g., ProConItem batches)
+        expanded_specs = expand_component_specs(component_specs)
+
+        # Build each component
+        total = len(expanded_specs)
+        components_built = 0
+
+        for i, spec in enumerate(expanded_specs):
+            component = build_a2ui_component(spec, state.content_analysis)
+            if component is None:
+                continue
+
+            apply_layout_and_zone(component, spec)
+
+            # Convert to dict for state
+            component_dict = {
+                "type": component.type,
+                "id": component.id,
+                "props": component.props,
+                "layout": component.layout,
+                "zone": component.zone
+            }
+
+            # Add component to state
+            state.components.append(component_dict)
+            components_built += 1
+
+            # Update progress
+            state.progress = 70 + int((i / total) * 25)
+
+        # Final completion update
+        state.status = "complete"
+        state.progress = 100
+        state.current_step = "Dashboard complete!"
+        state.activity_log.append({
+            "id": str(uuid4()),
+            "message": f"Generated {components_built} components",
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed"
+        })
+
+        return f"Generated {components_built} A2UI components for the dashboard"
+
+    return agent
 
 
-# Initialize the agent (will be imported by main.py)
-# Only initialize if API key is available
-try:
-    agent = create_agent()
-except ValueError as e:
-    # Allow module to load even without API key for testing
-    print(f"Warning: {e}")
-    agent = None
+# Initialize agent (lazy loading)
+_agent_instance = None
+
+
+def get_agent() -> Agent[DashboardState, str]:
+    """Get or create the agent instance."""
+    global _agent_instance
+    if _agent_instance is None:
+        _agent_instance = create_agent()
+    return _agent_instance

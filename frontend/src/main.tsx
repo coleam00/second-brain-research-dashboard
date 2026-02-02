@@ -1,6 +1,5 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { CopilotKit } from '@copilotkit/react-core'
 import './index.css'
 import App from './App.tsx'
 import A2UITestPage from './A2UITestPage.tsx'
@@ -24,14 +23,10 @@ const USE_PEOPLE_TEST_PAGE = window.location.search.includes('people-test');
 const USE_NEWS_TEST_PAGE = window.location.search.includes('news-test');
 const USE_TEST_PAGE = window.location.search === '?test' || window.location.search.startsWith('?test&');
 
-// CopilotKit configuration
+// Backend URL for AG-UI connection
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-const COPILOT_CONFIG = {
-  publicApiKey: '', // Not needed for self-hosted backend
-  runtimeUrl: `${BACKEND_URL}/ag-ui/stream`,
-}
 
-console.log('Initializing CopilotKit with backend:', COPILOT_CONFIG.runtimeUrl)
+console.log('AG-UI Backend:', `${BACKEND_URL}/agent`)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -54,8 +49,7 @@ createRoot(document.getElementById('root')!).render(
     ) : USE_TEST_PAGE ? (
       <A2UITestPage />
     ) : (
-      // Temporarily render without CopilotKit to test layout
-      // CopilotKit will be re-enabled when backend agent is properly configured
+      // Main app - uses AG-UI protocol directly via useDashboardAgent hook
       <App />
     )}
   </StrictMode>,
